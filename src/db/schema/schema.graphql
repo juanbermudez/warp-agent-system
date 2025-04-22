@@ -1,0 +1,289 @@
+type Project {
+  id: ID!
+  name: String!
+  description: String
+  rootPath: String
+  createdAt: DateTime
+  tasks: [Task]
+  rules: [Rule]
+  personas: [Persona]
+}
+
+type Task {
+  id: ID!
+  title: String!
+  description: String
+  status: TaskStatus
+  priority: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+  project: Project
+  subTasks: [SubTask]
+  requirements: [Requirement]
+  designSpecs: [DesignSpec]
+  assignedTo: AgentInstance
+}
+
+enum TaskStatus {
+  TODO
+  DECOMPOSING
+  AWAITING_PLAN_REVIEW
+  IN_PROGRESS
+  BLOCKED
+  DONE
+  ERROR
+}
+
+type SubTask {
+  id: ID!
+  title: String!
+  description: String
+  status: TaskStatus
+  type: SubTaskType
+  parentTask: Task!
+  dependencies: [SubTask]
+  assignedRole: AgentRole
+  assignedTo: AgentInstance
+  createdAt: DateTime
+  updatedAt: DateTime
+  ckgLinks: [String]
+  commandDetails: String
+  codeChanges: [CodeChange]
+}
+
+enum SubTaskType {
+  CODE
+  COMMAND
+  DESIGN
+  REVIEW
+  TEST
+}
+
+type AgentInstance {
+  id: ID!
+  role: AgentRole!
+  status: AgentStatus!
+  contextSize: Int
+  createdAt: DateTime!
+  lastActiveAt: DateTime
+  handledTasks: [SubTask]
+  activeContext: String
+}
+
+enum AgentRole {
+  ORCHESTRATOR
+  PRODUCT_LEAD
+  DESIGN_ENGINEER
+  FRONTEND_ENGINEER
+  BACKEND_ENGINEER
+  QA_TESTER
+}
+
+enum AgentStatus {
+  IDLE
+  BUSY
+  ERROR
+  TERMINATED
+}
+
+type Rule {
+  id: ID!
+  name: String!
+  description: String
+  ruleType: RuleType
+  content: String!
+  appliesTo: [Project]
+  appliesForRoles: [AgentRole]
+}
+
+enum RuleType {
+  CODE_STANDARD
+  ARCHITECTURE
+  NAMING_CONVENTION
+  SECURITY
+  TESTING
+  WORKFLOW
+}
+
+type Persona {
+  id: ID!
+  role: AgentRole!
+  description: String!
+  promptTemplate: String!
+  project: Project
+}
+
+type Requirement {
+  id: ID!
+  title: String!
+  description: String!
+  task: Task
+  priority: Int
+  status: RequirementStatus
+}
+
+enum RequirementStatus {
+  DRAFT
+  APPROVED
+  IMPLEMENTED
+  VERIFIED
+}
+
+type DesignSpec {
+  id: ID!
+  title: String!
+  content: String!
+  task: Task
+  createdAt: DateTime
+  updatedAt: DateTime
+  approvedAt: DateTime
+  approvedBy: String
+}
+
+type ArchDecision {
+  id: ID!
+  title: String!
+  description: String!
+  rationale: String
+  alternatives: String
+  createdAt: DateTime
+  task: Task
+}
+
+type File {
+  id: ID!
+  path: String!
+  content: String
+  fileType: String
+  lastModified: DateTime
+  functions: [Function]
+  classes: [Class]
+  interfaces: [Interface]
+}
+
+type Function {
+  id: ID!
+  name: String!
+  signature: String!
+  description: String
+  file: File!
+  calls: [Function]
+  calledBy: [Function]
+}
+
+type Class {
+  id: ID!
+  name: String!
+  description: String
+  file: File!
+  implements: [Interface]
+  methods: [Function]
+}
+
+type Interface {
+  id: ID!
+  name: String!
+  description: String
+  file: File!
+  implementedBy: [Class]
+}
+
+type TestPlan {
+  id: ID!
+  title: String!
+  description: String
+  task: Task
+  testCases: [TestCase]
+}
+
+type TestCase {
+  id: ID!
+  title: String!
+  description: String
+  steps: String
+  expectedResult: String
+  testPlan: TestPlan
+  status: TestStatus
+  bugReports: [BugReport]
+}
+
+enum TestStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  PASSED
+  FAILED
+}
+
+type BugReport {
+  id: ID!
+  title: String!
+  description: String!
+  severity: BugSeverity!
+  status: BugStatus!
+  testCase: TestCase
+  createdAt: DateTime
+  resolvedAt: DateTime
+  assignedTo: AgentInstance
+}
+
+enum BugSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum BugStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  VERIFIED
+  WONT_FIX
+}
+
+type CodeChange {
+  id: ID!
+  path: String!
+  diff: String!
+  description: String
+  subTask: SubTask
+  createdAt: DateTime
+  status: CodeChangeStatus
+}
+
+enum CodeChangeStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  MERGED
+}
+
+type HITLInteraction {
+  id: ID!
+  type: HITLType!
+  message: String!
+  metadata: String
+  status: HITLStatus!
+  createdAt: DateTime!
+  respondedAt: DateTime
+  relatedTask: Task
+  relatedSubTask: SubTask
+}
+
+enum HITLType {
+  PLAN_REVIEW
+  COMMAND_APPROVAL
+  CODE_REVIEW
+  QA_SIGNOFF
+  FINAL_APPROVAL
+}
+
+enum HITLStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  TIMED_OUT
+}
+
+# Define DateTime scalar type
+scalar DateTime

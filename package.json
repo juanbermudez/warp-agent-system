@@ -1,0 +1,42 @@
+{
+  "name": "warp-agent-system",
+  "version": "0.1.0",
+  "description": "Warp Agent System for AI-assisted software development",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "node --loader ts-node/esm src/index.ts",
+    "test": "node --loader ts-node/esm src/tests/db-operations.test.ts",
+    "test:db": "node --loader ts-node/esm src/tests/db-operations.test.ts",
+    "schema:init": "node --loader ts-node/esm src/scripts/init-schema.ts",
+    "schema:check": "node --loader ts-node/esm src/scripts/check-schema.ts",
+    "schema:generate-zod": "node --loader ts-node/esm src/scripts/generate-zod.ts",
+    "schema:init-no-zod": "node --loader ts-node/esm src/scripts/init-schema.ts --no-generate-zod",
+    "schema:check-sync": "node --loader ts-node/esm src/scripts/check-schema-sync.ts"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "author": "Warp Team",
+  "license": "MIT",
+  "dependencies": {
+    "@grpc/grpc-js": "^1.9.0",
+    "dgraph-js": "^21.3.1",
+    "graphql": "^16.8.0",
+    "graphql-compose": "^9.0.10",
+    "graphql-request": "^6.1.0",
+    "lowdb": "^7.0.1",
+    "winston": "^3.10.0",
+    "zod": "^3.22.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.4",
+    "@types/node": "^20.5.6",
+    "jest": "^29.6.4",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  }
+}

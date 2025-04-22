@@ -1,0 +1,27 @@
+# Add these scripts to your package.json file:
+
+"scripts": {
+  ... existing scripts ...,
+  "schema:init": "ts-node src/db/schema/cli.ts init",
+  "schema:check": "ts-node src/db/schema/cli.ts check",
+  "schema:export": "ts-node src/db/schema/cli.ts export",
+  "schema:generate-zod": "ts-node src/db/schema/cli.ts generate-zod",
+  "schema:init-no-zod": "ts-node src/db/schema/cli.ts init --no-generate-zod",
+  "schema:check-sync": "bash scripts/ci-check-schema-sync.sh"
+}
+
+# Add these dependencies if they're not already present:
+
+"dependencies": {
+  ... existing dependencies ...,
+  "dgraph-js": "^21.3.1",
+  "@grpc/grpc-js": "^1.8.0",
+  "graphql": "^16.6.0",
+  "graphql-request": "^5.0.0",
+  "zod": "^3.20.0",
+  "yargs": "^17.7.1"
+},
+"devDependencies": {
+  ... existing devDependencies ...,
+  "@types/yargs": "^17.0.20"
+}
