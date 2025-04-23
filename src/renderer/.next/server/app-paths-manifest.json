@@ -1,0 +1,4 @@
+{
+  "/(main)/details/page": "app/(main)/details/page.js",
+  "/(main)/overview/page": "app/(main)/overview/page.js"
+}

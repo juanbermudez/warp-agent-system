@@ -1,13 +1,15 @@
 // src/index.ts
 import { config } from './config.js';
 import { logger } from './utils/logger.js';
+import { app, BrowserWindow } from 'electron';
 import { queryCkgTool } from './tools/query_ckg.js';
 import { updateCkgTool } from './tools/update_ckg.js';
 import { initializeSchemaHandler } from './tools/initialize_schema.js';
 import { isDgraphRunning, initSchema } from './db/dgraph.js';
-import { startMCPServer } from './mcp-server-enhanced.js';
+import { startMCPServer } from './mcp-server.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
 
 // Get the directory name in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -53,7 +55,7 @@ async function main() {
     logger.info('Configuration loaded', { 
       dgraphAddress: config.dgraph.address,
       mcpPort: config.mcp.port
-    });
+    });  
 
     // Initialize database
     await initializeDatabase();
@@ -92,6 +94,33 @@ async function main() {
     process.exit(1);
   }
 }
+
+// Create the main Electron window
+function createWindow() {
+  const mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  // In development, load from Vite dev server
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.webContents.openDevTools();
+  } else {
+    // In production, load from built files
+    mainWindow.loadFile(path.join(__dirname, '../dist/renderer/index.html'));
+  }
+}
+
+// Electron app events
+app.whenReady().then(() => {
+  createWindow();
+});
 
 // Run the main function
 main().catch(error => {
