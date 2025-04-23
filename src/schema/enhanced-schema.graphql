@@ -1,0 +1,467 @@
+# Warp Agent System: Enhanced GraphQL Schema
+# This schema includes support for hierarchical tasks, scoped configurations, and time-based traversal
+
+# Time-related types and relationships
+type TimePoint {
+  id: ID!
+  timestamp: DateTime!
+  entityId: String!  # ID of the entity this timepoint relates to
+  entityType: String! # Type of entity (Task, Commit, etc.)
+  eventType: TimeEventType!
+  metadata: String    # Optional JSON for additional event data
+}
+
+# Core entity types
+type Organization {
+  id: ID!
+  name: String! @search(by: [term, exact])
+  description: String
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  teams: [Team] @hasInverse(field: organization)
+  projects: [Project] @hasInverse(field: organization)
+  rules: [Rule] @hasInverse(field: appliesTo)
+  workflows: [Workflow] @hasInverse(field: appliesTo)
+  personas: [Persona] @hasInverse(field: appliesTo)
+}
+
+type Team {
+  id: ID!
+  name: String! @search(by: [term, exact])
+  description: String
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  organization: Organization!
+  users: [User] @hasInverse(field: team)
+  projects: [Project] @hasInverse(field: team)
+  rules: [Rule] @hasInverse(field: appliesTo)
+  workflows: [Workflow] @hasInverse(field: appliesTo)
+  personas: [Persona] @hasInverse(field: appliesTo)
+}
+
+type User {
+  id: ID!
+  name: String! @search(by: [term, exact])
+  email: String @search(by: [exact])
+  role: String
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  team: Team
+  rules: [Rule] @hasInverse(field: appliesTo)
+  workflows: [Workflow] @hasInverse(field: appliesTo)
+  personas: [Persona] @hasInverse(field: appliesTo)
+}
+
+type Project {
+  id: ID!
+  name: String! @search(by: [term, exact])
+  description: String
+  rootPath: String
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  organization: Organization
+  team: Team
+  tasks: [Task] @hasInverse(field: project)
+  rules: [Rule] @hasInverse(field: appliesTo)
+  workflows: [Workflow] @hasInverse(field: appliesTo)
+  personas: [Persona] @hasInverse(field: appliesTo)
+}
+
+type Task {
+  id: ID!
+  title: String! @search(by: [term, exact])
+  description: String
+  taskLevel: TaskLevel!
+  status: TaskStatus!
+  priority: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+  completedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  statusChangeTimePoints: [TimePoint] @hasInverse(field: statusChangedEntity)
+  completionTimePoint: TimePoint @hasInverse(field: completedEntity)
+  project: Project!
+  parentTask: Task
+  childTasks: [Task] @hasInverse(field: parentTask)
+  dependencies: [Task]
+  dependedOnBy: [Task] @hasInverse(field: dependencies)
+  requirements: [Requirement] @hasInverse(field: task)
+  designSpecs: [DesignSpec] @hasInverse(field: task)
+  assignedTo: AgentInstance
+  guidedByStep: WorkflowStep @hasInverse(field: tasksGuidedByThisStep)
+  codeChanges: [CodeChange] @hasInverse(field: task)
+  scopeContext: String # JSON with userId, projectId, teamId, orgId
+}
+
+type Workflow {
+  id: ID!
+  name: String! @search(by: [term, exact])
+  description: String
+  appliesToTaskType: TaskLevel!
+  scope: ScopeLevel!
+  isActive: Boolean!
+  version: String
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  steps: [WorkflowStep] @hasInverse(field: workflow)
+  appliesTo: [Project]
+}
+
+type WorkflowStep {
+  id: ID!
+  name: String! @search(by: [term, exact])
+  description: String
+  stepOrder: Int!
+  workflow: Workflow!
+  requiredRole: AgentRole
+  expectedSubTaskType: SubTaskType
+  isOptional: Boolean
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  nextStep: WorkflowStep
+  previousStep: WorkflowStep
+  tasksGuidedByThisStep: [Task] @hasInverse(field: guidedByStep)
+}
+
+type AgentInstance {
+  id: ID!
+  role: AgentRole!
+  status: AgentStatus!
+  contextSize: Int
+  createdAt: DateTime
+  lastActiveAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  activityTimePoints: [TimePoint] @hasInverse(field: agentActivityEntity)
+  terminationTimePoint: TimePoint @hasInverse(field: terminatedEntity)
+  handledTasks: [Task]
+  activeContext: String
+}
+
+type Rule {
+  id: ID!
+  name: String! @search(by: [term, exact])
+  description: String
+  ruleType: RuleType!
+  content: String
+  scope: ScopeLevel!
+  isActive: Boolean!
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  appliesTo: [Project]
+  appliesForRoles: [AgentRole]
+}
+
+type Persona {
+  id: ID!
+  role: AgentRole!
+  description: String
+  promptTemplate: String
+  scope: ScopeLevel!
+  isActive: Boolean!
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  appliesTo: [Project]
+  project: Project
+}
+
+type Requirement {
+  id: ID!
+  title: String! @search(by: [term, exact])
+  description: String
+  task: Task
+  priority: Int
+  status: RequirementStatus!
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  statusChangeTimePoints: [TimePoint] @hasInverse(field: statusChangedEntity)
+}
+
+type DesignSpec {
+  id: ID!
+  title: String! @search(by: [term, exact])
+  content: String
+  task: Task
+  createdAt: DateTime
+  updatedAt: DateTime
+  approvedAt: DateTime
+  approvedBy: String
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  approvalTimePoint: TimePoint @hasInverse(field: approvedEntity)
+}
+
+type ArchDecision {
+  id: ID!
+  title: String! @search(by: [term, exact])
+  description: String
+  rationale: String
+  alternatives: String
+  createdAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  task: Task
+}
+
+type File {
+  id: ID!
+  path: String! @search(by: [term, exact])
+  content: String
+  fileType: String
+  lastModified: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  functions: [Function] @hasInverse(field: file)
+  classes: [Class] @hasInverse(field: file)
+  interfaces: [Interface] @hasInverse(field: file)
+}
+
+type Function {
+  id: ID!
+  name: String! @search(by: [term, exact])
+  signature: String
+  description: String
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  file: File!
+  calls: [Function]
+  calledBy: [Function]
+}
+
+type Class {
+  id: ID!
+  name: String! @search(by: [term, exact])
+  description: String
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  file: File!
+  implements: [Interface]
+  methods: [Function]
+}
+
+type Interface {
+  id: ID!
+  name: String! @search(by: [term, exact])
+  description: String
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  file: File!
+  implementedBy: [Class] @hasInverse(field: implements)
+}
+
+type TestPlan {
+  id: ID!
+  title: String! @search(by: [term, exact])
+  description: String
+  task: Task
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  testCases: [TestCase] @hasInverse(field: testPlan)
+}
+
+type TestCase {
+  id: ID!
+  title: String! @search(by: [term, exact])
+  description: String
+  steps: String
+  expectedResult: String
+  testPlan: TestPlan
+  status: TestStatus!
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  statusChangeTimePoints: [TimePoint] @hasInverse(field: statusChangedEntity)
+  bugReports: [BugReport] @hasInverse(field: testCase)
+}
+
+type BugReport {
+  id: ID!
+  title: String! @search(by: [term, exact])
+  description: String
+  severity: BugSeverity!
+  status: BugStatus!
+  createdAt: DateTime
+  resolvedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  resolutionTimePoint: TimePoint @hasInverse(field: resolvedEntity)
+  statusChangeTimePoints: [TimePoint] @hasInverse(field: statusChangedEntity)
+  testCase: TestCase
+  assignedTo: AgentInstance
+}
+
+type CodeChange {
+  id: ID!
+  path: String! @search(by: [term, exact])
+  diff: String
+  description: String
+  task: Task
+  createdAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  status: CodeChangeStatus!
+  statusChangeTimePoints: [TimePoint] @hasInverse(field: statusChangedEntity)
+}
+
+type HITLInteraction {
+  id: ID!
+  type: HITLType!
+  message: String
+  metadata: String
+  status: HITLStatus!
+  createdAt: DateTime
+  respondedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  responseTimePoint: TimePoint @hasInverse(field: respondedEntity)
+  relatedTask: Task
+}
+
+# Enums
+enum TaskLevel {
+  PROJECT
+  MILESTONE
+  TASK
+  SUBTASK
+}
+
+enum TaskStatus {
+  TODO
+  DECOMPOSING
+  AWAITING_PLAN_REVIEW
+  IN_PROGRESS
+  BLOCKED
+  DONE
+  ERROR
+}
+
+enum SubTaskType {
+  CODE
+  COMMAND
+  DESIGN
+  REVIEW
+  TEST
+}
+
+enum AgentRole {
+  ORCHESTRATOR
+  PRODUCT_LEAD
+  DESIGN_ENGINEER
+  FRONTEND_ENGINEER
+  BACKEND_ENGINEER
+  QA_TESTER
+}
+
+enum AgentStatus {
+  IDLE
+  BUSY
+  ERROR
+  TERMINATED
+}
+
+enum RuleType {
+  CODE_STANDARD
+  ARCHITECTURE
+  NAMING_CONVENTION
+  SECURITY
+  TESTING
+  WORKFLOW
+}
+
+enum ScopeLevel {
+  DEFAULT
+  ORG
+  TEAM
+  PROJECT
+  USER
+}
+
+enum RequirementStatus {
+  DRAFT
+  APPROVED
+  IMPLEMENTED
+  VERIFIED
+}
+
+enum TestStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  PASSED
+  FAILED
+}
+
+enum BugSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum BugStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  VERIFIED
+  WONT_FIX
+}
+
+enum CodeChangeStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  MERGED
+}
+
+enum HITLType {
+  PLAN_REVIEW
+  COMMAND_APPROVAL
+  CODE_REVIEW
+  QA_SIGNOFF
+  FINAL_APPROVAL
+}
+
+enum HITLStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  TIMED_OUT
+}
+
+enum TimeEventType {
+  CREATION
+  MODIFICATION
+  STATUS_CHANGE
+  APPROVAL
+  REJECTION
+  COMPLETION
+  RESOLUTION
+  AGENT_ACTIVITY
+  TERMINATION
+  RESPONSE
+}
+
+# Custom scalar types
+scalar DateTime

@@ -1,0 +1,56 @@
+# Task Status Management Enhanced Schema
+# Additional schema for flexible, scope-aware status management
+
+# Status entity definition
+type TaskStatusEntity {
+  id: ID!
+  name: String! @search(by: [term, exact]) 
+  description: String
+  color: String
+  icon: String
+  category: String @search(by: [term])
+  isDefault: Boolean
+  allowedTransitionsTo: [TaskStatusEntity] @hasInverse(field: allowedTransitionsFrom)
+  allowedTransitionsFrom: [TaskStatusEntity] @hasInverse(field: allowedTransitionsTo)
+  scope: ScopeLevel!
+  scopeEntityId: String  # ID of the specific org/team/project/user
+  isActive: Boolean!
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  appliesTo: [Project]  # If scope is PROJECT
+  tasksWithThisStatus: [Task] @hasInverse(field: statusEntity)
+}
+
+# Enhanced WorkflowStep with status references
+type WorkflowStepEnhanced {
+  id: ID!
+  name: String! @search(by: [term, exact])
+  description: String
+  stepOrder: Int!
+  workflow: Workflow!
+  requiredRole: AgentRole
+  expectedSubTaskType: SubTaskType
+  isOptional: Boolean
+  # Status management enhancements
+  requiredStatus: TaskStatusEntity
+  resultingStatus: TaskStatusEntity
+  scope: ScopeLevel!
+  scopeEntityId: String
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  nextStep: WorkflowStep
+  previousStep: WorkflowStep
+  tasksGuidedByThisStep: [Task] @hasInverse(field: guidedByStep)
+}
+
+# Enhanced Task with status entity reference
+extend type Task {
+  statusEntity: TaskStatusEntity
+  workflowStage: String  # For additional workflow-specific stage info
+  stageColor: String     # For visualization
+  stageCategory: String  # For categorization
+}
