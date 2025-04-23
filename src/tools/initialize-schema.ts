@@ -96,3 +96,6 @@ export const initializeSchemaHandler = {
   parameters: initializeSchemaInputSchema,
   handler: initializeSchema,
 };
+
+// Export both the function and the handler for consistency
+export { initializeSchema };

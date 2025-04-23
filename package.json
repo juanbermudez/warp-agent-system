@@ -4,6 +4,14 @@
   "description": "Warp Agent System for AI-assisted software development",
   "type": "module",
   "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    },
+    "./tools": {
+      "import": "./dist/tools/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
