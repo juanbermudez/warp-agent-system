@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { logger } from '../utils/logger.js';
 import { config } from '../config.js';
 import { projectSchema, taskSchema, Project, Task } from '../types/generated/ckg-schema.js';
-import { createGraphQLClientWithFallback } from '../db/dgraph.js';
+import { createGraphQLClientWithFallback } from '../db/dgraph-adapter.js';
 
 // Input schema using generated Zod schemas
 const queryCkgInputSchema = z.object({
@@ -19,7 +19,9 @@ const queryCkgInputSchema = z.object({
   }),
   nodeType: z.enum(['Project', 'Task', 'SubTask', 'File', 'Function', 'Class', 'Interface', 
                     'Requirement', 'DesignSpec', 'ArchDecision', 'Rule', 'Persona', 
-                    'TestPlan', 'TestCase', 'BugReport', 'CodeChange', 'HITLInteraction']),
+                    'TestPlan', 'TestCase', 'BugReport', 'CodeChange', 'HITLInteraction',
+                    'Activity', 'ActivityGroup', 'FileChangeActivity', 'CommentActivity',
+                    'CommandActivity', 'AgentTransitionActivity']),
 });
 
 // Union of possible output types using generated Zod schemas

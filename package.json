@@ -33,8 +33,12 @@
     "activity:group": "node --loader ts-node/esm src/scripts/activity-cli.ts group",
     "activity:list": "node --loader ts-node/esm src/scripts/activity-cli.ts list",
     "activity:thread": "node --loader ts-node/esm src/scripts/activity-cli.ts thread",
+    "activity:cli:ckg": "node --loader ts-node/esm src/scripts/activity-cli-ckg.ts",
+    "activity:migrate": "node --loader ts-node/esm src/scripts/migrate-activities-to-ckg.ts",
+    "schema:add-activities": "node --loader ts-node/esm src/scripts/add-activity-schema.ts",
     "test:activity": "node --loader ts-node/esm src/tests/activity-tracking.test.ts",
-    "test:activity:simple": "node --loader ts-node/esm src/tests/activity-simple-test.ts"
+    "test:activity:simple": "node --loader ts-node/esm src/tests/activity-simple-test.ts",
+    "test:activity:ckg": "node --loader ts-node/esm src/tests/activity-ckg.test.ts"
   },
   "engines": {
     "node": ">=20.0.0"

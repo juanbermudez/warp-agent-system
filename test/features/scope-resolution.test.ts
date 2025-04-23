@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { GraphDatabase } from '../../src/db/dgraph';
-import { query_ckg } from '../../src/tools/query-ckg';
-import { update_ckg } from '../../src/tools/update-ckg';
+import { queryCkg } from '../../src/tools/query-ckg.js';
+import { updateCkg } from '../../src/tools/update-ckg.js';
 import { v4 as uuidv4 } from 'uuid';
 
 // Mock the GraphDatabase to avoid actual database calls during tests
@@ -280,7 +280,7 @@ describe('Scope Resolution Tests', () => {
   });
   
   test('resolveConfigByScope should resolve rules from most specific to least specific scope', async () => {
-    const result = await query_ckg({
+    const result = await queryCkg({
       queryType: 'resolveConfigByScope',
       parameters: {
         contextScope: {
@@ -309,7 +309,7 @@ describe('Scope Resolution Tests', () => {
   });
   
   test('resolveConfigByScope should resolve workflow from project scope over default', async () => {
-    const result = await query_ckg({
+    const result = await queryCkg({
       queryType: 'resolveConfigByScope',
       parameters: {
         contextScope: {
@@ -332,7 +332,7 @@ describe('Scope Resolution Tests', () => {
   });
   
   test('resolveConfigByScope should fallback to default workflow when no override exists', async () => {
-    const result = await query_ckg({
+    const result = await queryCkg({
       queryType: 'resolveConfigByScope',
       parameters: {
         contextScope: {
@@ -353,7 +353,7 @@ describe('Scope Resolution Tests', () => {
   });
   
   test('resolveConfigByScope should resolve persona from project scope over default', async () => {
-    const result = await query_ckg({
+    const result = await queryCkg({
       queryType: 'resolveConfigByScope',
       parameters: {
         contextScope: {
@@ -372,7 +372,7 @@ describe('Scope Resolution Tests', () => {
   });
   
   test('createScopedConfig should create a rule with the correct scope', async () => {
-    const result = await update_ckg({
+    const result = await updateCkg({
       updateType: 'createScopedConfig',
       parameters: {
         configType: 'Rule',
@@ -395,7 +395,7 @@ describe('Scope Resolution Tests', () => {
   });
   
   test('createScopedConfig should create a default-scoped rule without entity ID', async () => {
-    const result = await update_ckg({
+    const result = await updateCkg({
       updateType: 'createScopedConfig',
       parameters: {
         configType: 'Rule',

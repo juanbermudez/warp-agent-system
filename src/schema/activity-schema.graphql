@@ -1,0 +1,234 @@
+# Activity Tracking Schema Extension
+
+# Activity entity types
+type Activity implements Entity {
+  id: ID!
+  timestamp: DateTime!
+  taskId: String
+  actorType: ActorTypeEnum!
+  actorId: String!
+  activityType: ActivityTypeEnum!
+  title: String!
+  content: String!
+  renderMode: RenderModeEnum!
+  nestingLevel: Int!
+  metadata: String
+  
+  # Relationships
+  parentActivity: Activity
+  childActivities: [Activity]
+  activityGroup: ActivityGroup
+  task: Task
+  relatedEntities: [Entity]
+  
+  # Standard fields
+  createdAt: DateTime!
+  modifiedAt: DateTime
+  
+  # TimePoints for time-based traversal
+  creationTimePoint: TimePoint
+  modificationTimePoints: [TimePoint]
+}
+
+type ActivityGroup implements Entity {
+  id: ID!
+  title: String!
+  description: String
+  startTime: DateTime!
+  endTime: DateTime
+  
+  # Relationships
+  parentGroup: ActivityGroup
+  childGroups: [ActivityGroup]
+  task: Task
+  activities: [Activity]
+  
+  # Standard fields
+  metadata: String
+  createdAt: DateTime!
+  modifiedAt: DateTime
+  
+  # TimePoints for time-based traversal
+  creationTimePoint: TimePoint
+  completionTimePoint: TimePoint
+}
+
+# Specialized activity types
+type FileChangeActivity implements Activity {
+  # All Activity fields
+  id: ID!
+  timestamp: DateTime!
+  taskId: String
+  actorType: ActorTypeEnum!
+  actorId: String!
+  activityType: ActivityTypeEnum!
+  title: String!
+  content: String!
+  renderMode: RenderModeEnum!
+  nestingLevel: Int!
+  metadata: String
+  
+  # Specialized fields
+  filePath: String!
+  changeType: FileChangeTypeEnum!
+  diffContent: String
+  
+  # Relationships
+  parentActivity: Activity
+  childActivities: [Activity]
+  activityGroup: ActivityGroup
+  task: Task
+  relatedEntities: [Entity]
+  file: File
+  
+  # Standard fields
+  createdAt: DateTime!
+  modifiedAt: DateTime
+}
+
+type CommentActivity implements Activity {
+  # All Activity fields
+  id: ID!
+  timestamp: DateTime!
+  taskId: String
+  actorType: ActorTypeEnum!
+  actorId: String!
+  activityType: ActivityTypeEnum!
+  title: String!
+  content: String!
+  renderMode: RenderModeEnum!
+  nestingLevel: Int!
+  metadata: String
+  
+  # Specialized fields
+  mentions: [String]
+  hasAttachments: Boolean!
+  
+  # Relationships
+  parentActivity: Activity
+  childActivities: [Activity]
+  activityGroup: ActivityGroup
+  task: Task
+  relatedEntities: [Entity]
+  
+  # Standard fields
+  createdAt: DateTime!
+  modifiedAt: DateTime
+}
+
+type CommandActivity implements Activity {
+  # All Activity fields
+  id: ID!
+  timestamp: DateTime!
+  taskId: String
+  actorType: ActorTypeEnum!
+  actorId: String!
+  activityType: ActivityTypeEnum!
+  title: String!
+  content: String!
+  renderMode: RenderModeEnum!
+  nestingLevel: Int!
+  metadata: String
+  
+  # Specialized fields
+  command: String!
+  exitCode: Int!
+  output: String!
+  
+  # Relationships
+  parentActivity: Activity
+  childActivities: [Activity]
+  activityGroup: ActivityGroup
+  task: Task
+  relatedEntities: [Entity]
+  
+  # Standard fields
+  createdAt: DateTime!
+  modifiedAt: DateTime
+}
+
+type AgentTransitionActivity implements Activity {
+  # All Activity fields
+  id: ID!
+  timestamp: DateTime!
+  taskId: String
+  actorType: ActorTypeEnum!
+  actorId: String!
+  activityType: ActivityTypeEnum!
+  title: String!
+  content: String!
+  renderMode: RenderModeEnum!
+  nestingLevel: Int!
+  metadata: String
+  
+  # Specialized fields
+  fromRole: String!
+  toRole: String!
+  reason: String!
+  
+  # Relationships
+  parentActivity: Activity
+  childActivities: [Activity]
+  activityGroup: ActivityGroup
+  task: Task
+  relatedEntities: [Entity]
+  
+  # Standard fields
+  createdAt: DateTime!
+  modifiedAt: DateTime
+}
+
+# Add relationships to existing types
+extend type Task {
+  activities: [Activity]
+  activityGroups: [ActivityGroup]
+}
+
+extend type File {
+  fileChangeActivities: [FileChangeActivity]
+}
+
+extend type AgentInstance {
+  agentTransitionActivities: [AgentTransitionActivity]
+  commandActivities: [CommandActivity]
+  commentActivities: [CommentActivity]
+}
+
+# Enums for Activity system
+enum ActorTypeEnum {
+  AGENT
+  USER
+  SYSTEM
+  INTEGRATION
+}
+
+enum ActivityTypeEnum {
+  COMMENT
+  QUESTION
+  ANSWER
+  TASK_CREATED
+  TASK_UPDATED
+  TASK_STATUS_CHANGED
+  TASK_ASSIGNED
+  FILE_CREATED
+  FILE_MODIFIED
+  FILE_DELETED
+  COMMAND_EXECUTED
+  SCRIPT_RUN
+  AGENT_TRANSITION
+  GROUP_CREATED
+  GROUP_COMPLETED
+  CUSTOM
+}
+
+enum RenderModeEnum {
+  ALWAYS_EXPANDED
+  EXPANDABLE
+  ALWAYS_CONDENSED
+}
+
+enum FileChangeTypeEnum {
+  CREATED
+  MODIFIED
+  DELETED
+}

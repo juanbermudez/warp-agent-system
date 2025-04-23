@@ -1,8 +1,8 @@
 import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { GraphDatabase } from '../../src/db/dgraph';
-import { query_ckg } from '../../src/tools/query-ckg';
-import { update_ckg } from '../../src/tools/update-ckg';
-import { analyze_task_dependencies } from '../../src/tools/analyze-task-dependencies';
+import { queryCkg } from '../../src/tools/query-ckg.js';
+import { updateCkg } from '../../src/tools/update-ckg.js';
+import { analyzeTaskDependencies } from '../../src/tools/analyze-task-dependencies.js';
 import { v4 as uuidv4 } from 'uuid';
 
 // Mock the GraphDatabase to avoid actual database calls during tests
@@ -230,8 +230,8 @@ describe('Hierarchical Task Management Tests', () => {
       return { success: true };
     });
     
-    // Mock analyze_task_dependencies function
-    global.analyze_task_dependencies = analyze_task_dependencies;
+    // Mock analyzeTaskDependencies function
+    global.analyzeTaskDependencies = analyzeTaskDependencies;
     
     // Replace the graphDb in query_ckg and update_ckg with our mock
     global.graphDb = mockDb;
@@ -242,7 +242,7 @@ describe('Hierarchical Task Management Tests', () => {
   });
   
   test('should fetch hierarchical task structure', async () => {
-    const result = await query_ckg({
+    const result = await queryCkg({
       queryType: 'getNodeById',
       parameters: {
         nodeType: 'Project',
@@ -271,7 +271,7 @@ describe('Hierarchical Task Management Tests', () => {
   });
   
   test('should create task with correct hierarchy level', async () => {
-    const result = await update_ckg({
+    const result = await updateCkg({
       updateType: 'createNode',
       parameters: {
         nodeType: 'Task',
@@ -298,7 +298,7 @@ describe('Hierarchical Task Management Tests', () => {
   });
   
   test('should update parent-child relationship', async () => {
-    const result = await update_ckg({
+    const result = await updateCkg({
       updateType: 'updateNodeProperties',
       parameters: {
         nodeType: 'Task',
@@ -317,12 +317,12 @@ describe('Hierarchical Task Management Tests', () => {
     expect(mockCall.set.parentTask.id).toBe('task2');
   });
   
-  test('analyze_task_dependencies should consider both explicit dependencies and workflow steps', async () => {
-    // We'll mock analyze_task_dependencies since it uses query_ckg internally
+  test('analyzeTaskDependencies should consider both explicit dependencies and workflow steps', async () => {
+    // We'll mock analyzeTaskDependencies since it uses queryCkg internally
     // This is a more complex test that would involve multiple internal calls
     
     // First get the parent task to analyze
-    const queryResult = await query_ckg({
+    const queryResult = await queryCkg({
       queryType: 'getNodeById',
       parameters: {
         nodeType: 'Task',
@@ -334,7 +334,7 @@ describe('Hierarchical Task Management Tests', () => {
     expect(queryResult.success).toBe(true);
     
     // Now analyze dependencies
-    const dependencyResult = await analyze_task_dependencies({
+    const dependencyResult = await analyzeTaskDependencies({
       parent_task_id: 'task4'
     });
     
@@ -347,7 +347,7 @@ describe('Hierarchical Task Management Tests', () => {
   
   test('should create a complete task hierarchy from project to subtask', async () => {
     // Create project task
-    const projectTaskResult = await update_ckg({
+    const projectTaskResult = await updateCkg({
       updateType: 'createNode',
       parameters: {
         nodeType: 'Task',
@@ -365,7 +365,7 @@ describe('Hierarchical Task Management Tests', () => {
     const projectTaskId = projectTaskResult.data.addTask.task.id;
     
     // Create milestone task
-    const milestoneTaskResult = await update_ckg({
+    const milestoneTaskResult = await updateCkg({
       updateType: 'createNode',
       parameters: {
         nodeType: 'Task',
@@ -384,7 +384,7 @@ describe('Hierarchical Task Management Tests', () => {
     const milestoneTaskId = milestoneTaskResult.data.addTask.task.id;
     
     // Create regular task
-    const taskResult = await update_ckg({
+    const taskResult = await updateCkg({
       updateType: 'createNode',
       parameters: {
         nodeType: 'Task',
@@ -403,7 +403,7 @@ describe('Hierarchical Task Management Tests', () => {
     const taskId = taskResult.data.addTask.task.id;
     
     // Create subtask
-    const subtaskResult = await update_ckg({
+    const subtaskResult = await updateCkg({
       updateType: 'createNode',
       parameters: {
         nodeType: 'Task',

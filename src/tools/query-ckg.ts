@@ -66,7 +66,7 @@ const cache = new NodeCache({
  * @param queryDetails Object specifying query type, parameters, and required properties
  * @returns Object containing query results
  */
-export async function query_ckg(queryDetails: z.infer<typeof QueryDetails>): Promise<z.infer<typeof ResultSchema>> {
+export async function queryCkg(queryDetails: z.infer<typeof QueryDetails>): Promise<z.infer<typeof ResultSchema>> {
   const startTime = Date.now();
   
   try {

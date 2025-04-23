@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { GraphDatabase } from '../../src/db/dgraph';
-import { query_ckg } from '../../src/tools/query-ckg';
-import { update_ckg } from '../../src/tools/update-ckg';
+import { queryCkg } from '../../src/tools/query-ckg.js';
+import { updateCkg } from '../../src/tools/update-ckg.js';
 import { v4 as uuidv4 } from 'uuid';
 
 // Mock the GraphDatabase to avoid actual database calls during tests
@@ -216,7 +216,7 @@ describe('Time-Based Traversal Tests', () => {
   });
   
   test('findTimeRelatedEvents should return events within a time window', async () => {
-    const result = await query_ckg({
+    const result = await queryCkg({
       queryType: 'findTimeRelatedEvents',
       parameters: {
         startTime: '2025-04-22T09:00:00Z',
@@ -248,7 +248,7 @@ describe('Time-Based Traversal Tests', () => {
   });
   
   test('findTimeRelatedEvents should filter by event types', async () => {
-    const result = await query_ckg({
+    const result = await queryCkg({
       queryType: 'findTimeRelatedEvents',
       parameters: {
         startTime: '2025-04-22T09:00:00Z',
@@ -267,7 +267,7 @@ describe('Time-Based Traversal Tests', () => {
   });
   
   test('getEntityHistory should return chronological history of an entity', async () => {
-    const result = await query_ckg({
+    const result = await queryCkg({
       queryType: 'getEntityHistory',
       parameters: {
         entityId: 'task1',
@@ -301,7 +301,7 @@ describe('Time-Based Traversal Tests', () => {
   });
   
   test('getEntityHistory should support time window filtering', async () => {
-    const result = await query_ckg({
+    const result = await queryCkg({
       queryType: 'getEntityHistory',
       parameters: {
         entityId: 'task1',
@@ -321,7 +321,7 @@ describe('Time-Based Traversal Tests', () => {
   });
   
   test('createTimePoint should create a new time point entity', async () => {
-    const result = await update_ckg({
+    const result = await updateCkg({
       updateType: 'createTimePoint',
       parameters: {
         entityId: 'task3',
@@ -339,7 +339,7 @@ describe('Time-Based Traversal Tests', () => {
   });
   
   test('Creating an entity should automatically create a creation TimePoint', async () => {
-    const result = await update_ckg({
+    const result = await updateCkg({
       updateType: 'createNode',
       parameters: {
         nodeType: 'Task',
@@ -361,7 +361,7 @@ describe('Time-Based Traversal Tests', () => {
   });
   
   test('Updating entity properties should create a modification TimePoint', async () => {
-    const result = await update_ckg({
+    const result = await updateCkg({
       updateType: 'updateNodeProperties',
       parameters: {
         nodeType: 'Task',
@@ -379,7 +379,7 @@ describe('Time-Based Traversal Tests', () => {
   });
   
   test('Status updates should create a status change TimePoint', async () => {
-    const result = await update_ckg({
+    const result = await updateCkg({
       updateType: 'updateNodeProperties',
       parameters: {
         nodeType: 'Task',

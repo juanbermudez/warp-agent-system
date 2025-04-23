@@ -1,150 +1,91 @@
-/**
- * Test for the activity tracking system
- */
+// Test ActivityTrackerCKG Integration
+// This script tests if the ActivityTrackerCKG class works correctly
 
-import fs from 'fs';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { ActivityTrackerCKG } from './dist/services/activity/activity-tracker-ckg.js';
+import { ActorType } from './dist/services/activity/types-ckg.js';
 
-// Get project root path
-const ROOT_PATH = process.cwd();
-
-// Path to .warp_memory directory
-const MEMORY_PATH = path.join(ROOT_PATH, '.warp_memory');
-
-// Generate test activity
-const testActivity = {
-  id: `test-act-${uuidv4()}`,
-  timestamp: new Date().toISOString(),
-  actorType: 'USER',
-  actorId: 'test-user',
-  activityType: 'CUSTOM',
-  title: 'Test Activity',
-  content: 'This is a test activity',
-  renderMode: 'EXPANDABLE',
-  nestingLevel: 0,
-  metadata: {}
-};
-
-// Create necessary directories
-const activitiesDir = path.join(MEMORY_PATH, 'activities');
-const groupsDir = path.join(MEMORY_PATH, 'activity_groups');
-const indexesDir = path.join(MEMORY_PATH, 'activity_indexes');
-const taskIndexDir = path.join(indexesDir, 'task');
-const entityIndexDir = path.join(indexesDir, 'entity');
-
-async function ensureDirectories() {
-  console.log('Ensuring directories exist...');
-  await fs.promises.mkdir(activitiesDir, { recursive: true });
-  await fs.promises.mkdir(groupsDir, { recursive: true });
-  await fs.promises.mkdir(taskIndexDir, { recursive: true });
-  await fs.promises.mkdir(entityIndexDir, { recursive: true });
-}
-
-// Write test activity to file
-async function writeActivity() {
-  console.log('Writing test activity...');
-  const activityPath = path.join(activitiesDir, `${testActivity.id}.json`);
-  await fs.promises.writeFile(activityPath, JSON.stringify(testActivity, null, 2), 'utf-8');
-  console.log(`Activity written to ${activityPath}`);
-}
-
-// Read test activity from file
-async function readActivity() {
-  console.log('Reading test activity...');
-  const activityPath = path.join(activitiesDir, `${testActivity.id}.json`);
-  const data = await fs.promises.readFile(activityPath, 'utf-8');
-  const activity = JSON.parse(data);
-  console.log('Activity read successfully:', activity);
-}
-
-// Create test activity group
-async function createActivityGroup() {
-  console.log('Creating test activity group...');
-  const groupId = `test-group-${uuidv4()}`;
-  const group = {
-    id: groupId,
-    title: 'Test Activity Group',
-    description: 'A group for testing activities',
-    startTime: new Date().toISOString(),
-    taskId: 'test-task-1',
-    metadata: {}
-  };
-  
-  const groupPath = path.join(groupsDir, `${groupId}.json`);
-  await fs.promises.writeFile(groupPath, JSON.stringify(group, null, 2), 'utf-8');
-  console.log(`Activity group written to ${groupPath}`);
-  
-  // Create task index
-  const taskIndexPath = path.join(taskIndexDir, `${group.taskId}_groups.json`);
-  let groups = [];
+async function testActivityTracker() {
+  console.log('==== Testing ActivityTrackerCKG ====');
   
   try {
-    const existingData = await fs.promises.readFile(taskIndexPath, 'utf-8');
-    groups = JSON.parse(existingData);
+    // Create activity tracker instance
+    console.log('Creating ActivityTrackerCKG instance...');
+    const activityTracker = new ActivityTrackerCKG();
+    
+    // Test comment logging
+    console.log('Testing logComment...');
+    const comment = await activityTracker.logComment({
+      content: 'This is a test comment',
+      actorType: ActorType.USER,
+      actorId: 'test-user',
+      hasAttachments: false
+    });
+    
+    console.log('✅ Successfully created comment activity!');
+    console.log('Comment ID:', comment.id);
+    
+    // Test file change logging
+    console.log('Testing logFileChange...');
+    const fileChange = await activityTracker.logFileChange({
+      filePath: '/test/path/file.txt',
+      changeType: 'MODIFIED',
+      actorType: ActorType.USER,
+      actorId: 'test-user',
+      diffContent: '- Old line\n+ New line'
+    });
+    
+    console.log('✅ Successfully created file change activity!');
+    console.log('File change ID:', fileChange.id);
+    
+    // Test activity group creation
+    console.log('Testing createActivityGroup...');
+    const group = await activityTracker.createActivityGroup({
+      title: 'Test Activity Group',
+      description: 'A test activity group'
+    });
+    
+    console.log('✅ Successfully created activity group!');
+    console.log('Group ID:', group.id);
+    
+    // Test commenting in the activity group
+    console.log('Testing comment in activity group...');
+    const groupComment = await activityTracker.logComment({
+      content: 'This is a test comment in a group',
+      actorType: ActorType.USER,
+      actorId: 'test-user',
+      activityGroupId: group.id,
+      hasAttachments: false
+    });
+    
+    console.log('✅ Successfully created comment in activity group!');
+    console.log('Group comment ID:', groupComment.id);
+    
+    // Test time-based activities
+    console.log('Testing getTimeBasedActivities...');
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const activities = await activityTracker.getTimeBasedActivities({
+      startTime: yesterday.toISOString(),
+      endTime: new Date().toISOString(),
+      limit: 10
+    });
+    
+    console.log(`Found ${activities.length} recent activities`);
+    
+    // Test completing a group
+    console.log('Testing completeActivityGroup...');
+    const completedGroup = await activityTracker.completeActivityGroup(group.id);
+    
+    console.log('✅ Successfully completed activity group!');
+    console.log('Group end time:', completedGroup.endTime);
+    
+    console.log('All tests passed successfully!');
   } catch (error) {
-    // File doesn't exist yet, that's OK
+    console.error('❌ Error during test:', error);
   }
   
-  groups.push(groupId);
-  await fs.promises.writeFile(taskIndexPath, JSON.stringify(groups), 'utf-8');
-  console.log(`Task index updated at ${taskIndexPath}`);
-  
-  return groupId;
+  console.log('==== Test Complete ====');
 }
 
-// Complete activity group
-async function completeActivityGroup(groupId) {
-  console.log(`Completing activity group ${groupId}...`);
-  const groupPath = path.join(groupsDir, `${groupId}.json`);
-  const data = await fs.promises.readFile(groupPath, 'utf-8');
-  const group = JSON.parse(data);
-  
-  group.endTime = new Date().toISOString();
-  await fs.promises.writeFile(groupPath, JSON.stringify(group, null, 2), 'utf-8');
-  console.log('Activity group completed');
-}
-
-// Clean up test activity
-async function cleanup() {
-  console.log('Cleaning up...');
-  try {
-    const activityPath = path.join(activitiesDir, `${testActivity.id}.json`);
-    await fs.promises.unlink(activityPath);
-    console.log(`Removed ${activityPath}`);
-  } catch (error) {
-    console.error('Error cleaning up activity:', error);
-  }
-}
-
-// Main test function
-async function runTest() {
-  try {
-    console.log('=== Testing Activity Tracking System ===');
-    
-    // Ensure directories exist
-    await ensureDirectories();
-    
-    // Write test activity
-    await writeActivity();
-    
-    // Read test activity
-    await readActivity();
-    
-    // Create activity group
-    const groupId = await createActivityGroup();
-    
-    // Complete activity group
-    await completeActivityGroup(groupId);
-    
-    // Cleanup
-    await cleanup();
-    
-    console.log('=== Test completed successfully ===');
-  } catch (error) {
-    console.error('Test failed:', error);
-  }
-}
-
-// Run the test
-runTest();
+testActivityTracker();

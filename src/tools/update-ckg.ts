@@ -40,7 +40,7 @@ const graphDb = new GraphDatabase(DGRAPH_URL, DB_PATH);
  * @param updateDetails Object specifying update type and parameters
  * @returns Object containing update results
  */
-export async function update_ckg(updateDetails: z.infer<typeof UpdateDetails>): Promise<z.infer<typeof ResultSchema>> {
+export async function updateCkg(updateDetails: z.infer<typeof UpdateDetails>): Promise<z.infer<typeof ResultSchema>> {
   try {
     // Validate input
     const validatedInput = UpdateDetails.parse(updateDetails);

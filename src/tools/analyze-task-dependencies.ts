@@ -8,7 +8,7 @@
 import { z } from 'zod';
 import { GraphDatabase } from '../db/dgraph';
 import { join } from 'path';
-import { query_ckg } from './query-ckg';
+import { queryCkg } from './query-ckg.js';
 
 // Define validation schemas
 const AnalyzeTaskDependenciesInput = z.object({
@@ -38,7 +38,7 @@ const graphDb = new GraphDatabase(DGRAPH_URL, DB_PATH);
  * @param input Object containing the parent task ID
  * @returns Object containing dependency analysis results
  */
-export async function analyze_task_dependencies(input: any): Promise<z.infer<typeof AnalyzeTaskDependenciesOutput>> {
+export async function analyzeTaskDependencies(input: any): Promise<z.infer<typeof AnalyzeTaskDependenciesOutput>> {
   try {
     // Validate input
     const validatedInput = AnalyzeTaskDependenciesInput.parse(input);
@@ -48,7 +48,7 @@ export async function analyze_task_dependencies(input: any): Promise<z.infer<typ
     await graphDb.initialize();
 
     // 1. Get parent task to determine its scope context
-    const parentTaskResult = await query_ckg({
+    const parentTaskResult = await queryCkg({
       queryType: 'getNodeById',
       parameters: {
         nodeType: 'Task',
@@ -74,7 +74,7 @@ export async function analyze_task_dependencies(input: any): Promise<z.infer<typ
     }
 
     // 2. Fetch all child tasks with their explicit dependencies
-    const childTasksResult = await query_ckg({
+    const childTasksResult = await queryCkg({
       queryType: 'findRelatedNodes',
       parameters: {
         nodeType: 'Task',
@@ -91,7 +91,7 @@ export async function analyze_task_dependencies(input: any): Promise<z.infer<typ
     const childTasks = childTasksResult.data || [];
 
     // 3. Fetch applicable workflow to consider workflow-based dependencies
-    const workflowResult = await query_ckg({
+    const workflowResult = await queryCkg({
       queryType: 'resolveConfigByScope',
       parameters: {
         contextScope: {

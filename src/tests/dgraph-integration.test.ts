@@ -9,8 +9,8 @@ import { expect } from 'chai';
 import { describe, it, before, after } from 'mocha';
 import { GraphDatabase } from '../db/dgraph';
 import { DgraphClient } from '../db/dgraph-client';
-import { query_ckg } from '../tools/query-ckg';
-import { update_ckg } from '../tools/update-ckg';
+import { queryCkg } from '../tools/query-ckg.js';
+import { updateCkg } from '../tools/update-ckg.js';
 import * as path from 'path';
 import * as fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
@@ -68,13 +68,13 @@ describe('Dgraph Integration Tests', () => {
     // Clean up test data if using Dgraph
     if (dgraphAvailable) {
       try {
-        await update_ckg({
+        await updateCkg({
           updateType: 'deleteNode',
           nodeType: 'Project',
           nodeId: testProject.id
         });
         
-        await update_ckg({
+        await updateCkg({
           updateType: 'deleteNode',
           nodeType: 'Task',
           nodeId: testTask.id
@@ -110,10 +110,10 @@ describe('Dgraph Integration Tests', () => {
     });
   });
   
-  describe('query_ckg Tool', () => {
+  describe('queryCkg Tool', () => {
     it('should get node by ID', async () => {
       // First create a test node
-      const createResult = await update_ckg({
+      const createResult = await updateCkg({
         updateType: 'createNode',
         nodeType: 'Project',
         nodeData: testProject
@@ -122,7 +122,7 @@ describe('Dgraph Integration Tests', () => {
       expect(createResult.success).to.be.true;
       
       // Then query for it
-      const queryResult = await query_ckg({
+      const queryResult = await queryCkg({
         queryType: 'getNodeById',
         parameters: {
           nodeType: 'Project',
@@ -138,7 +138,7 @@ describe('Dgraph Integration Tests', () => {
     });
     
     it('should find nodes by label', async () => {
-      const queryResult = await query_ckg({
+      const queryResult = await queryCkg({
         queryType: 'findNodesByLabel',
         parameters: {
           label: 'Project',
@@ -161,7 +161,7 @@ describe('Dgraph Integration Tests', () => {
     
     it('should handle cache options', async () => {
       // First query without cache
-      const queryResult1 = await query_ckg({
+      const queryResult1 = await queryCkg({
         queryType: 'getNodeById',
         parameters: {
           nodeType: 'Project',
@@ -177,7 +177,7 @@ describe('Dgraph Integration Tests', () => {
       expect(queryResult1.source).to.not.equal('cache');
       
       // Second query with cache
-      const queryResult2 = await query_ckg({
+      const queryResult2 = await queryCkg({
         queryType: 'getNodeById',
         parameters: {
           nodeType: 'Project',
@@ -195,9 +195,9 @@ describe('Dgraph Integration Tests', () => {
     });
   });
   
-  describe('update_ckg Tool', () => {
+  describe('updateCkg Tool', () => {
     it('should create a new node', async () => {
-      const updateResult = await update_ckg({
+      const updateResult = await updateCkg({
         updateType: 'createNode',
         nodeType: 'Task',
         nodeData: testTask
@@ -211,7 +211,7 @@ describe('Dgraph Integration Tests', () => {
     });
     
     it('should update node properties', async () => {
-      const updateResult = await update_ckg({
+      const updateResult = await updateCkg({
         updateType: 'updateNodeProperties',
         nodeType: 'Task',
         nodeId: testTask.id,
@@ -230,7 +230,7 @@ describe('Dgraph Integration Tests', () => {
     });
     
     it('should create a relationship between nodes', async () => {
-      const updateResult = await update_ckg({
+      const updateResult = await updateCkg({
         updateType: 'createRelationship',
         nodeType: 'Project',
         nodeId: testProject.id,
@@ -248,7 +248,7 @@ describe('Dgraph Integration Tests', () => {
     });
     
     it('should find related nodes', async () => {
-      const queryResult = await query_ckg({
+      const queryResult = await queryCkg({
         queryType: 'findRelatedNodes',
         parameters: {
           nodeType: 'Project',
@@ -278,7 +278,7 @@ describe('Dgraph Integration Tests', () => {
         status: 'todo'
       };
       
-      const updateResult = await update_ckg({
+      const updateResult = await updateCkg({
         updateType: 'batchUpdate',
         batchOperations: [
           {

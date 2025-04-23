@@ -9,7 +9,7 @@ import {
   ruleSchema,
   personaSchema
 } from '../types/generated/ckg-schema.js';
-import { createGraphQLClientWithFallback } from '../db/dgraph.js';
+import { createGraphQLClientWithFallback } from '../db/dgraph-adapter.js';
 
 // Input schema using generated Zod schemas
 const updateCkgInputSchema = z.object({
@@ -25,7 +25,8 @@ const updateCkgInputSchema = z.object({
     'Rule', 'Persona', 'Requirement', 'DesignSpec',
     'ArchDecision', 'File', 'Function', 'Class',
     'Interface', 'TestPlan', 'TestCase', 'BugReport',
-    'CodeChange', 'HITLInteraction'
+    'CodeChange', 'HITLInteraction', 'Activity', 'ActivityGroup', 
+    'FileChangeActivity', 'CommentActivity', 'CommandActivity', 'AgentTransitionActivity'
   ]),
   nodeData: z.record(z.string(), z.any())
     .optional()
@@ -44,7 +45,8 @@ const updateCkgInputSchema = z.object({
     'Rule', 'Persona', 'Requirement', 'DesignSpec',
     'ArchDecision', 'File', 'Function', 'Class',
     'Interface', 'TestPlan', 'TestCase', 'BugReport',
-    'CodeChange', 'HITLInteraction'
+    'CodeChange', 'HITLInteraction', 'Activity', 'ActivityGroup', 
+    'FileChangeActivity', 'CommentActivity', 'CommandActivity', 'AgentTransitionActivity'
   ])
     .optional()
     .describe('Type of the target node for relationship operations'),
