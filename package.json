@@ -32,7 +32,8 @@
     "activity:transition": "node --loader ts-node/esm src/scripts/activity-cli.ts transition",
     "activity:group": "node --loader ts-node/esm src/scripts/activity-cli.ts group",
     "activity:list": "node --loader ts-node/esm src/scripts/activity-cli.ts list",
-    "activity:thread": "node --loader ts-node/esm src/scripts/activity-cli.ts thread"
+    "activity:thread": "node --loader ts-node/esm src/scripts/activity-cli.ts thread",
+    "test:activity": "node --loader ts-node/esm src/tests/activity-tracking.test.ts"
   },
   "engines": {
     "node": ">=20.0.0"
