@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Simplified Activity Tracking Test
- * 
- * This script tests the simplified CKG-based activity tracking system.
+ * Simplified activity tracker test in JavaScript
  */
 
 import { ActivityTrackerSimplified } from '../services/activity/activity-tracker-simplified.js';
@@ -20,7 +18,7 @@ const activityTracker = new ActivityTrackerSimplified();
 /**
  * Run simplified tests for the activity tracker
  */
-async function runTests(): Promise<void> {
+async function runTests() {
   try {
     console.log('Starting simplified CKG activity tracking tests...');
     
@@ -50,6 +48,5 @@ async function runTests(): Promise<void> {
   }
 }
 
-// Execute if this script is run directly
-// Use require.main === module check for Node.js
+// Run the tests
 runTests().catch(console.error);
