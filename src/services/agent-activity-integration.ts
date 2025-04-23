@@ -61,11 +61,11 @@ export class AgentActivityLogger {
       const group = await this.activityTracker.createActivityGroup({
         title,
         description,
-        taskId: this.metadata.taskId
+        taskId: this.metadata.taskId || undefined
       });
       
-      this.currentGroupId = group.id;
-      return group.id;
+      this.currentGroupId = group.id || '';
+      return group.id || '';
     } catch (error) {
       console.error('Error starting activity group:', error);
       throw error;

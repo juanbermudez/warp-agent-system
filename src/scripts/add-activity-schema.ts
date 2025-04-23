@@ -34,7 +34,7 @@ async function addActivitySchema(): Promise<void> {
     try {
       await fs.access(MAIN_SCHEMA_PATH);
       console.log(`Main schema exists at ${MAIN_SCHEMA_PATH}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error(`Main schema file not found at ${MAIN_SCHEMA_PATH}`);
       throw new Error(`Main schema file not found: ${err.message}`);
     }
@@ -42,7 +42,7 @@ async function addActivitySchema(): Promise<void> {
     try {
       await fs.access(ACTIVITY_SCHEMA_PATH);
       console.log(`Activity schema exists at ${ACTIVITY_SCHEMA_PATH}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error(`Activity schema file not found at ${ACTIVITY_SCHEMA_PATH}`);
       throw new Error(`Activity schema file not found: ${err.message}`);
     }
@@ -78,7 +78,7 @@ async function addActivitySchema(): Promise<void> {
     try {
       execSync('npm run schema:init', { stdio: 'inherit' });
       console.log('Schema initialization completed successfully');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error running schema initialization:', err.message);
       throw new Error(`Schema initialization failed: ${err.message}`);
     }
@@ -88,7 +88,7 @@ async function addActivitySchema(): Promise<void> {
     try {
       execSync('npm run schema:generate-zod', { stdio: 'inherit' });
       console.log('Zod schema generation completed successfully');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error generating Zod schemas:', err.message);
       throw new Error(`Zod schema generation failed: ${err.message}`);
     }
@@ -113,7 +113,8 @@ async function addActivitySchema(): Promise<void> {
 }
 
 // Execute if this script is run directly
-if (require.main === module) {
+// Use a different check for ESM modules
+if (import.meta.url === import.meta.main) {
   addActivitySchema().catch(console.error);
 }
 
