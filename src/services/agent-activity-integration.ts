@@ -1,11 +1,11 @@
 /**
- * Agent Activity Integration
+ * Agent Activity Integration - Fixed Implementation
  * 
  * This file demonstrates how to integrate the CKG-based Activity Tracking System
- * with the Warp Agent System.
+ * with the Warp Agent System using the fixed implementation.
  */
 
-import { ActivityTrackerCKG } from './activity/activity-tracker-ckg.js';
+import { ActivityTrackerCKG } from './activity/activity-tracker-ckg-fixed.js';
 import { ActorType, ActivityType, RenderMode } from './activity/types-ckg.js';
 
 /**
@@ -61,11 +61,11 @@ export class AgentActivityLogger {
       const group = await this.activityTracker.createActivityGroup({
         title,
         description,
-        taskId: this.metadata.taskId || undefined
+        taskId: this.metadata.taskId
       });
       
       this.currentGroupId = group.id || '';
-      return group.id || '';
+      return this.currentGroupId;
     } catch (error) {
       console.error('Error starting activity group:', error);
       throw error;
@@ -275,6 +275,11 @@ export async function agentActivityExample() {
 }
 
 // Execute if this script is run directly
-if (require.main === module) {
+try {
+  if (process.argv[1] === import.meta.url) {
+    agentActivityExample().catch(console.error);
+  }
+} catch {
+  // Ignore this error, it happens when import.meta.url is not available
   agentActivityExample().catch(console.error);
 }

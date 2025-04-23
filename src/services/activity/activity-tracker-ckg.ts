@@ -1,18 +1,10 @@
 /**
- * Activity Tracker Service - CKG Implementation
+ * Activity Tracker Service - CKG Implementation (Fixed Version)
  * 
  * Main service for logging and retrieving activities in the Warp system.
  * Uses the Code Knowledge Graph (CKG) for storage and retrieval.
+ * This version uses the adapter pattern to fix interface mismatches.
  */
-
-// Define interface for query results
-interface QueryCkgResult {
-  success: boolean;
-  status?: 'success' | 'error';
-  data?: any;
-  results?: any[];
-  error?: string;
-}
 
 import { v4 as uuidv4 } from 'uuid';
 import { 
@@ -21,8 +13,9 @@ import {
   CommandActivity, AgentTransitionActivity, TimelineOptions,
   FileChangeType
 } from './types-ckg.js';
-import { queryCkg } from '../../tools/query-ckg.js';
-import { updateCkg } from '../../tools/update-ckg.js';
+
+// Import the adapter functions instead of direct CKG functions
+import { queryCkg, updateCkg } from './ckg-adapter.js';
 
 /**
  * Service for tracking and retrieving activities using the CKG database.
@@ -83,81 +76,74 @@ export class ActivityTrackerCKG {
   private async createActivityRelationships(activity: Activity): Promise<void> {
     // Link to task if applicable
     if (activity.taskId) {
-      await updateCkg({
-        updateType: 'createRelationship',
-        nodeType: 'Activity',
-        nodeId: activity.id,
-        relationshipType: 'task',
-        targetNodeType: 'Task',
-        targetNodeId: activity.taskId
-      });
+      await this.createRelationship(
+        'Activity', 
+        activity.id, 
+        'task',
+        'Task',
+        activity.taskId
+      );
       
       // Also link from Task to Activity
-      await updateCkg({
-        updateType: 'createRelationship',
-        nodeType: 'Task',
-        nodeId: activity.taskId,
-        relationshipType: 'activities',
-        targetNodeType: 'Activity',
-        targetNodeId: activity.id
-      });
+      await this.createRelationship(
+        'Task',
+        activity.taskId,
+        'activities',
+        'Activity',
+        activity.id
+      );
     }
     
     // Link to parent activity if applicable
     if (activity.parentActivityId) {
-      await updateCkg({
-        updateType: 'createRelationship',
-        nodeType: 'Activity',
-        nodeId: activity.id,
-        relationshipType: 'parentActivity',
-        targetNodeType: 'Activity',
-        targetNodeId: activity.parentActivityId
-      });
+      await this.createRelationship(
+        'Activity',
+        activity.id,
+        'parentActivity',
+        'Activity',
+        activity.parentActivityId
+      );
       
       // Also link from parent to child
-      await updateCkg({
-        updateType: 'createRelationship',
-        nodeType: 'Activity',
-        nodeId: activity.parentActivityId,
-        relationshipType: 'childActivities',
-        targetNodeType: 'Activity',
-        targetNodeId: activity.id
-      });
+      await this.createRelationship(
+        'Activity',
+        activity.parentActivityId,
+        'childActivities',
+        'Activity',
+        activity.id
+      );
     }
     
     // Link to activity group if applicable
     if (activity.activityGroupId) {
-      await updateCkg({
-        updateType: 'createRelationship',
-        nodeType: 'Activity',
-        nodeId: activity.id,
-        relationshipType: 'activityGroup',
-        targetNodeType: 'ActivityGroup',
-        targetNodeId: activity.activityGroupId
-      });
+      await this.createRelationship(
+        'Activity',
+        activity.id,
+        'activityGroup',
+        'ActivityGroup',
+        activity.activityGroupId
+      );
       
       // Also link from group to activity
-      await updateCkg({
-        updateType: 'createRelationship',
-        nodeType: 'ActivityGroup',
-        nodeId: activity.activityGroupId,
-        relationshipType: 'activities',
-        targetNodeType: 'Activity',
-        targetNodeId: activity.id
-      });
+      await this.createRelationship(
+        'ActivityGroup',
+        activity.activityGroupId,
+        'activities',
+        'Activity',
+        activity.id
+      );
     }
     
     // Link to related entities if applicable
     if (activity.relatedEntityIds && activity.relatedEntityIds.length > 0) {
       for (const entityId of activity.relatedEntityIds) {
-        await updateCkg({
-          updateType: 'createRelationship',
-          nodeType: 'Activity',
-          nodeId: activity.id,
-          relationshipType: 'relatedEntities',
-          targetNodeType: 'Entity', // Generic Entity interface
-          targetNodeId: entityId
-        });
+        await this.createRelationship(
+          'Activity',
+          activity.id,
+          'relatedEntities',
+          'Entity', // Generic Entity interface
+          entityId
+        );
       }
     }
     
@@ -174,6 +160,26 @@ export class ActivityTrackerCKG {
           actorType: activity.actorType
         })
       }
+    });
+  }
+  
+  /**
+   * Helper method to create a relationship between entities
+   */
+  private async createRelationship(
+    sourceType: string,
+    sourceId: string,
+    relationshipType: string,
+    targetType: string,
+    targetId: string
+  ): Promise<void> {
+    await updateCkg({
+      updateType: 'createRelationship',
+      nodeType: sourceType,
+      nodeId: sourceId,
+      relationshipType: relationshipType,
+      targetNodeType: targetType,
+      targetNodeId: targetId
     });
   }
   
@@ -217,58 +223,56 @@ export class ActivityTrackerCKG {
    * @param group The activity group to create relationships for
    */
   private async createActivityGroupRelationships(group: ActivityGroup): Promise<void> {
+    const groupId = group.id || '';
+    
     // Link to task if applicable
     if (group.taskId) {
-      await updateCkg({
-        updateType: 'createRelationship',
-        nodeType: 'ActivityGroup',
-        nodeId: group.id!,
-        relationshipType: 'task',
-        targetNodeType: 'Task',
-        targetNodeId: group.taskId
-      });
+      await this.createRelationship(
+        'ActivityGroup',
+        groupId,
+        'task',
+        'Task',
+        group.taskId
+      );
       
       // Also link from Task to ActivityGroup
-      await updateCkg({
-        updateType: 'createRelationship',
-        nodeType: 'Task',
-        nodeId: group.taskId,
-        relationshipType: 'activityGroups',
-        targetNodeType: 'ActivityGroup',
-        targetNodeId: group.id!
-      });
+      await this.createRelationship(
+        'Task',
+        group.taskId,
+        'activityGroups',
+        'ActivityGroup',
+        groupId
+      );
     }
     
     // Link to parent group if applicable
     if (group.parentGroupId) {
-      await updateCkg({
-        updateType: 'createRelationship',
-        nodeType: 'ActivityGroup',
-        nodeId: group.id!,
-        relationshipType: 'parentGroup',
-        targetNodeType: 'ActivityGroup',
-        targetNodeId: group.parentGroupId
-      });
+      await this.createRelationship(
+        'ActivityGroup',
+        groupId,
+        'parentGroup',
+        'ActivityGroup',
+        group.parentGroupId
+      );
       
       // Also link from parent to child
-      await updateCkg({
-        updateType: 'createRelationship',
-        nodeType: 'ActivityGroup',
-        nodeId: group.parentGroupId,
-        relationshipType: 'childGroups',
-        targetNodeType: 'ActivityGroup',
-        targetNodeId: group.id!
-      });
+      await this.createRelationship(
+        'ActivityGroup',
+        group.parentGroupId,
+        'childGroups',
+        'ActivityGroup',
+        groupId
+      );
     }
     
     // Create TimePoint for this group
     await updateCkg({
       updateType: 'createTimePoint',
       parameters: {
-        entityId: group.id!,
+        entityId: groupId,
         entityType: 'ActivityGroup',
         eventType: 'CREATION',
-        timestamp: group.startTime || group.createdAt!,
+        timestamp: group.startTime || group.createdAt || now,
         metadata: JSON.stringify({
           groupTitle: group.title
         })
@@ -361,6 +365,7 @@ export class ActivityTrackerCKG {
         activityType = ActivityType.FILE_MODIFIED;
         break;
       case 'DELETED':
+      default:
         activityType = ActivityType.FILE_DELETED;
         break;
     }
@@ -368,21 +373,19 @@ export class ActivityTrackerCKG {
     // Get file name from path
     const fileName = filePath.split('/').pop() || filePath;
     
-    const activity: FileChangeActivity = {
+    // Create the base activity
+    const baseActivity: Partial<Activity> = {
       activityType,
       title: `${changeType.charAt(0) + changeType.slice(1).toLowerCase()} ${fileName}`,
       content: diffContent || `File ${fileName} was ${changeType.toLowerCase()}`,
       renderMode: RenderMode.EXPANDABLE,
       nestingLevel: rest.parentActivityId ? 1 : 0,
-      filePath,
-      changeType: changeType as FileChangeType,
-      diffContent,
       relatedEntityIds: [filePath], // Add file as a related entity
       ...rest
     };
     
     // Log the activity using the generic method
-    const result = await this.logActivity(activity);
+    const result = await this.logActivity(baseActivity);
     
     // Create specialized relationship to File entity if it exists
     try {
@@ -398,34 +401,32 @@ export class ActivityTrackerCKG {
       if (fileResult.status === 'success' && fileResult.results.length > 0) {
         const fileId = fileResult.results[0].id;
         
-        // Create relationship between FileChangeActivity and File
-        await updateCkg({
-          updateType: 'createRelationship',
-          nodeType: 'Activity',
-          nodeId: result.id,
-          relationshipType: 'file',
-          targetNodeType: 'File',
-          targetNodeId: fileId
-        });
+        // Create relationships between File and Activity
+        await this.createRelationship(
+          'Activity',
+          result.id,
+          'file',
+          'File',
+          fileId
+        );
         
-        // Create relationship from File to FileChangeActivity
-        await updateCkg({
-          updateType: 'createRelationship',
-          nodeType: 'File',
-          nodeId: fileId,
-          relationshipType: 'fileChangeActivities',
-          targetNodeType: 'Activity',
-          targetNodeId: result.id
-        });
+        await this.createRelationship(
+          'File',
+          fileId,
+          'fileChangeActivities',
+          'Activity',
+          result.id
+        );
       }
     } catch (error) {
       // Ignore errors when linking to file - it might not exist yet
       console.error('Error linking file change to file:', error);
     }
     
-    // Properly combine the base activity with the specialized fields
+    // Create specialized activity by combining the base activity with the specialized fields
     const fileChangeActivity: FileChangeActivity = {
       ...result,
+      activityType: activityType as FileChangeActivity['activityType'],
       filePath,
       changeType: changeType as FileChangeType,
       diffContent
@@ -452,19 +453,18 @@ export class ActivityTrackerCKG {
   }): Promise<CommentActivity> {
     const { content, mentions, hasAttachments, ...rest } = params;
     
-    const activity: CommentActivity = {
+    // Create base activity
+    const baseActivity: Partial<Activity> = {
       activityType: ActivityType.COMMENT,
       title: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
       content,
       renderMode: RenderMode.ALWAYS_EXPANDED,
       nestingLevel: rest.parentActivityId ? 1 : 0,
-      mentions: mentions || [],
-      hasAttachments: hasAttachments || false,
       ...rest
     };
     
     // Log the activity using the generic method
-    const result = await this.logActivity(activity);
+    const result = await this.logActivity(baseActivity);
     
     // Create relationship to Agent if this is from an agent
     if (params.actorType === ActorType.AGENT) {
@@ -480,14 +480,13 @@ export class ActivityTrackerCKG {
         
         if (agentResult.status === 'success' && agentResult.results.length > 0) {
           // Create relationship from AgentInstance to CommentActivity
-          await updateCkg({
-            updateType: 'createRelationship',
-            nodeType: 'AgentInstance',
-            nodeId: params.actorId,
-            relationshipType: 'commentActivities',
-            targetNodeType: 'Activity',
-            targetNodeId: result.id
-          });
+          await this.createRelationship(
+            'AgentInstance',
+            params.actorId,
+            'commentActivities',
+            'Activity',
+            result.id
+          );
         }
       } catch (error) {
         // Ignore errors when linking to agent
@@ -495,9 +494,10 @@ export class ActivityTrackerCKG {
       }
     }
     
-    // Properly combine the base activity with the specialized fields
+    // Create specialized activity by combining the base activity with the specialized fields
     const commentActivity: CommentActivity = {
       ...result,
+      activityType: ActivityType.COMMENT as CommentActivity['activityType'],
       mentions: mentions || [],
       hasAttachments: hasAttachments || false
     };
@@ -523,20 +523,18 @@ export class ActivityTrackerCKG {
   }): Promise<CommandActivity> {
     const { command, output, exitCode, ...rest } = params;
     
-    const activity: CommandActivity = {
+    // Create base activity
+    const baseActivity: Partial<Activity> = {
       activityType: ActivityType.COMMAND_EXECUTED,
       title: `Executed: ${command.substring(0, 40)}${command.length > 40 ? '...' : ''}`,
       content: `Command: ${command}\nExit Code: ${exitCode}\nOutput: ${output}`,
       renderMode: RenderMode.EXPANDABLE,
       nestingLevel: rest.parentActivityId ? 1 : 0,
-      command,
-      output,
-      exitCode,
       ...rest
     };
     
     // Log the activity using the generic method
-    const result = await this.logActivity(activity);
+    const result = await this.logActivity(baseActivity);
     
     // Create relationship to Agent if this is from an agent
     if (params.actorType === ActorType.AGENT) {
@@ -552,14 +550,13 @@ export class ActivityTrackerCKG {
         
         if (agentResult.status === 'success' && agentResult.results.length > 0) {
           // Create relationship from AgentInstance to CommandActivity
-          await updateCkg({
-            updateType: 'createRelationship',
-            nodeType: 'AgentInstance',
-            nodeId: params.actorId,
-            relationshipType: 'commandActivities',
-            targetNodeType: 'Activity',
-            targetNodeId: result.id
-          });
+          await this.createRelationship(
+            'AgentInstance',
+            params.actorId,
+            'commandActivities',
+            'Activity',
+            result.id
+          );
         }
       } catch (error) {
         // Ignore errors when linking to agent
@@ -567,9 +564,10 @@ export class ActivityTrackerCKG {
       }
     }
     
-    // Properly combine the base activity with the specialized fields
+    // Create specialized activity by combining the base activity with the specialized fields
     const commandActivity: CommandActivity = {
       ...result,
+      activityType: ActivityType.COMMAND_EXECUTED as CommandActivity['activityType'],
       command,
       output,
       exitCode
@@ -595,42 +593,39 @@ export class ActivityTrackerCKG {
   }): Promise<AgentTransitionActivity> {
     const { fromRole, toRole, reason, ...rest } = params;
     
-    const activity: AgentTransitionActivity = {
+    // Create base activity
+    const baseActivity: Partial<Activity> = {
       actorType: ActorType.SYSTEM,
-      actorId: rest.actorId,
       activityType: ActivityType.AGENT_TRANSITION,
       title: `Transition: ${fromRole} → ${toRole}`,
       content: reason,
       renderMode: RenderMode.EXPANDABLE,
       nestingLevel: rest.parentActivityId ? 1 : 0,
-      fromRole,
-      toRole,
-      reason,
       ...rest
     };
     
     // Log the activity using the generic method
-    const result = await this.logActivity(activity);
+    const result = await this.logActivity(baseActivity);
     
     // Create relationship to Agent
     try {
       // Create relationship from AgentInstance to AgentTransitionActivity
-      await updateCkg({
-        updateType: 'createRelationship',
-        nodeType: 'AgentInstance',
-        nodeId: rest.actorId,
-        relationshipType: 'agentTransitionActivities',
-        targetNodeType: 'Activity',
-        targetNodeId: result.id
-      });
+      await this.createRelationship(
+        'AgentInstance',
+        rest.actorId,
+        'agentTransitionActivities',
+        'Activity',
+        result.id
+      );
     } catch (error) {
       // Ignore errors when linking to agent
       console.error('Error linking transition to agent:', error);
     }
     
-    // Properly combine the base activity with the specialized fields
+    // Create specialized activity by combining the base activity with the specialized fields
     const transitionActivity: AgentTransitionActivity = {
       ...result,
+      activityType: ActivityType.AGENT_TRANSITION as AgentTransitionActivity['activityType'],
       fromRole,
       toRole,
       reason
@@ -860,9 +855,11 @@ export class ActivityTrackerCKG {
     const groups = result.results as ActivityGroup[];
     
     // Sort by start time
-    groups.sort((a, b) => 
-      new Date(a.startTime!).getTime() - new Date(b.startTime!).getTime()
-    );
+    groups.sort((a, b) => {
+      const aTime = a.startTime ? new Date(a.startTime).getTime() : 0;
+      const bTime = b.startTime ? new Date(b.startTime).getTime() : 0;
+      return aTime - bTime;
+    });
     
     return groups;
   }
