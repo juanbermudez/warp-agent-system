@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { GraphDatabase } from '../../src/db/dgraph';
-import { query_ckg } from '../../src/tools/query-ckg-enhanced';
-import { update_ckg } from '../../src/tools/update-ckg-enhanced';
+import { query_ckg } from '../../src/tools/query-ckg';
+import { update_ckg } from '../../src/tools/update-ckg';
 import { v4 as uuidv4 } from 'uuid';
 
 // Mock the GraphDatabase to avoid actual database calls during tests
