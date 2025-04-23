@@ -16,8 +16,9 @@ const ROOT_PATH = path.resolve(process.cwd());
 // Path to .warp_memory directory
 const MEMORY_PATH = path.join(ROOT_PATH, '.warp_memory');
 
-// Cleanup function to remove test activities
+// Clean up function to remove test activities
 async function cleanup() {
+  console.log('Starting cleanup...');
   try {
     // Clean up activities directory
     const activitiesPath = path.join(MEMORY_PATH, 'activities');
