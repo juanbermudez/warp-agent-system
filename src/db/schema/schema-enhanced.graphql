@@ -1,0 +1,208 @@
+# Enhanced Schema with Hierarchical Tasks, Scope Resolution, and Time-Based Traversal
+
+# Time-related types
+type TimePoint {
+  id: ID!
+  timestamp: DateTime!
+  entityId: String!
+  entityType: String!
+  eventType: TimeEventType!
+  metadata: String
+  createdEntity: Entity @hasInverse(field: creationTimePoint)
+  modifiedEntity: Entity @hasInverse(field: modificationTimePoints)
+  statusChangedEntity: Entity @hasInverse(field: statusChangeTimePoints)
+  approvedEntity: Entity @hasInverse(field: approvalTimePoint)
+  rejectedEntity: Entity @hasInverse(field: rejectionTimePoint)
+  completedEntity: Entity @hasInverse(field: completionTimePoint)
+  resolvedEntity: Entity @hasInverse(field: resolutionTimePoint)
+  agentActivityEntity: AgentInstance @hasInverse(field: activityTimePoints)
+  terminatedEntity: Entity @hasInverse(field: terminationTimePoint)
+  respondedEntity: Entity @hasInverse(field: responseTimePoint)
+}
+
+# Scope hierarchy types
+type Organization {
+  id: ID!
+  name: String!
+  description: String
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  teams: [Team] @hasInverse(field: organization)
+  projects: [Project] @hasInverse(field: organization)
+  rules: [Rule] @hasInverse(field: appliesTo)
+  workflows: [Workflow] @hasInverse(field: appliesTo)
+  personas: [Persona] @hasInverse(field: appliesTo)
+}
+
+type Team {
+  id: ID!
+  name: String!
+  description: String
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  organization: Organization @hasInverse(field: teams)
+  users: [User] @hasInverse(field: team)
+  projects: [Project] @hasInverse(field: team)
+  rules: [Rule] @hasInverse(field: appliesTo)
+  workflows: [Workflow] @hasInverse(field: appliesTo)
+  personas: [Persona] @hasInverse(field: appliesTo)
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String
+  role: String
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  team: Team @hasInverse(field: users)
+  rules: [Rule] @hasInverse(field: appliesTo)
+  workflows: [Workflow] @hasInverse(field: appliesTo)
+  personas: [Persona] @hasInverse(field: appliesTo)
+}
+
+# Project updated with time-based relationships
+type Project {
+  id: ID!
+  name: String!
+  description: String
+  rootPath: String
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  organization: Organization @hasInverse(field: projects)
+  team: Team @hasInverse(field: projects)
+  tasks: [Task] @hasInverse(field: project)
+  rules: [Rule] @hasInverse(field: appliesTo)
+  workflows: [Workflow] @hasInverse(field: appliesTo)
+  personas: [Persona] @hasInverse(field: appliesTo)
+}
+
+# Unified Task structure with TaskLevel
+type Task {
+  id: ID!
+  title: String!
+  description: String
+  taskLevel: TaskLevel!
+  status: TaskStatus!
+  priority: Int
+  scopeContext: String # JSON with userId, projectId, teamId, orgId
+  createdAt: DateTime
+  updatedAt: DateTime
+  completedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  statusChangeTimePoints: [TimePoint] @hasInverse(field: statusChangedEntity)
+  completionTimePoint: TimePoint @hasInverse(field: completedEntity)
+  project: Project @hasInverse(field: tasks)
+  parentTask: Task @hasInverse(field: childTasks)
+  childTasks: [Task] @hasInverse(field: parentTask)
+  dependencies: [Task]
+  dependedOnBy: [Task] @hasInverse(field: dependencies)
+  guidedByStep: WorkflowStep @hasInverse(field: tasksGuidedByThisStep)
+  requirements: [Requirement] @hasInverse(field: task)
+  designSpecs: [DesignSpec] @hasInverse(field: task)
+  assignedTo: AgentInstance
+}
+
+# Workflow definitions
+type Workflow {
+  id: ID!
+  name: String!
+  description: String
+  appliesToTaskType: TaskLevel!
+  scope: ScopeLevel!
+  isActive: Boolean!
+  version: String
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  appliesTo: [Entity]
+  steps: [WorkflowStep] @hasInverse(field: workflow)
+}
+
+type WorkflowStep {
+  id: ID!
+  name: String!
+  description: String
+  stepOrder: Int!
+  workflow: Workflow @hasInverse(field: steps)
+  requiredRole: AgentRole
+  expectedSubTaskType: SubTaskType
+  isOptional: Boolean
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  nextStep: WorkflowStep
+  previousStep: WorkflowStep @hasInverse(field: nextStep)
+  tasksGuidedByThisStep: [Task] @hasInverse(field: guidedByStep)
+}
+
+# Updated Agent with time tracking
+type AgentInstance {
+  id: ID!
+  role: AgentRole!
+  status: AgentStatus!
+  contextSize: Int
+  createdAt: DateTime
+  lastActiveAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  activityTimePoints: [TimePoint] @hasInverse(field: agentActivityEntity)
+  terminationTimePoint: TimePoint @hasInverse(field: terminatedEntity)
+  handledTasks: [Task] @hasInverse(field: assignedTo)
+  activeContext: String
+}
+
+# Rule with scope
+type Rule {
+  id: ID!
+  name: String!
+  description: String
+  ruleType: RuleType!
+  content: String!
+  scope: ScopeLevel!
+  isActive: Boolean!
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  appliesTo: [Entity]
+  appliesForRoles: [AgentRole]
+}
+
+# Persona with scope
+type Persona {
+  id: ID!
+  role: AgentRole!
+  description: String!
+  promptTemplate: String!
+  scope: ScopeLevel!
+  isActive: Boolean!
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field: createdEntity)
+  modificationTimePoints: [TimePoint] @hasInverse(field: modifiedEntity)
+  appliesTo: [Entity]
+  project: Project
+}
+
+# Updated types with time tracking
+type Requirement {
+  id: ID!
+  title: String!
+  description: String!
+  task: Task @hasInverse(field: requirements)
+  priority: Int
+  status: RequirementStatus!
+  createdAt: DateTime
+  modifiedAt: DateTime
+  creationTimePoint: TimePoint @hasInverse(field:

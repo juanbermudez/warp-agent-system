@@ -75,6 +75,223 @@ export async function getStore(nodeType: string): Promise<Low<DatabaseData>> {
 }
 
 /**
+ * Local implementation of a GraphDatabase for the CKG
+ */
+export class LocalGraphDatabase {
+  private initialized: boolean = false;
+  private dbPath: string;
+  
+  /**
+   * Constructor
+   * @param dbPath Path to the local database
+   */
+  constructor(dbPath: string) {
+    this.dbPath = dbPath;
+  }
+  
+  /**
+   * Initialize the database
+   */
+  async initialize(): Promise<void> {
+    try {
+      await ensureDbDir();
+      this.initialized = true;
+    } catch (error) {
+      logger.error('Failed to initialize local graph database', { error });
+      throw error;
+    }
+  }
+  
+  /**
+   * Apply a GraphQL schema to the local database
+   * @param schema GraphQL schema string
+   * @returns Promise<boolean> True if successful
+   */
+  async applySchema(schema: string): Promise<boolean> {
+    try {
+      // Ensure the DB directory exists
+      await ensureDbDir();
+      
+      // Extract type definitions
+      const typeRegex = /type\s+(\w+)\s*{/g;
+      let match;
+      
+      const types = [];
+      while ((match = typeRegex.exec(schema)) !== null) {
+        types.push(match[1]);
+      }
+      
+      // Create a store for each type
+      for (const type of types) {
+        await getStore(type);
+      }
+      
+      // Save schema to special schema store
+      const schemaStore = await getStore('_Schema');
+      await schemaStore.read();
+      
+      // Initialize Schema collection if it doesn't exist
+      if (!schemaStore.data._Schema) {
+        schemaStore.data._Schema = {};
+      }
+      
+      // Store schema
+      schemaStore.data._Schema = {
+        'schema': {
+          id: 'schema',
+          content: schema,
+          updatedAt: new Date().toISOString()
+        }
+      };
+      
+      await schemaStore.write();
+      
+      logger.info('Applied schema to local database', { types });
+      return true;
+    } catch (error) {
+      logger.error('Failed to apply schema to local database', { error });
+      throw error;
+    }
+  }
+  
+  /**
+   * Execute a GraphQL query or mutation
+   * @param query GraphQL query or mutation
+   * @param variables Query variables
+   * @returns Promise<any> Query result
+   */
+  async executeGraphQL(query: string, variables: any = {}): Promise<any> {
+    try {
+      if (!this.initialized) {
+        await this.initialize();
+      }
+      
+      const client = getLocalGraphClient();
+      return await client.request(query, variables);
+    } catch (error) {
+      logger.error('Failed to execute GraphQL operation', { error, query, variables });
+      throw error;
+    }
+  }
+  
+  /**
+   * Create a relationship between two nodes
+   * @param fromType Source node type
+   * @param fromId Source node ID
+   * @param relationType Relationship type
+   * @param toType Target node type
+   * @param toId Target node ID
+   * @returns Promise<any> Operation result
+   */
+  async createRelationship(
+    fromType: string,
+    fromId: string,
+    relationType: string,
+    toType: string,
+    toId: string
+  ): Promise<any> {
+    try {
+      // Get the source node
+      const fromStore = await getStore(fromType);
+      await fromStore.read();
+      
+      const fromCollection = fromStore.data[fromType] as EntityData;
+      const fromNode = fromCollection[fromId];
+      
+      if (!fromNode) {
+        throw new Error(`Source node ${fromType}:${fromId} not found`);
+      }
+      
+      // Get the target node
+      const toStore = await getStore(toType);
+      await toStore.read();
+      
+      const toCollection = toStore.data[toType] as EntityData;
+      const toNode = toCollection[toId];
+      
+      if (!toNode) {
+        throw new Error(`Target node ${toType}:${toId} not found`);
+      }
+      
+      // Create the relationship
+      if (!fromNode[relationType]) {
+        fromNode[relationType] = [];
+      }
+      
+      // Check if the relationship already exists
+      const exists = Array.isArray(fromNode[relationType]) && 
+                     fromNode[relationType].some((rel: any) => rel.id === toId);
+      
+      if (!exists) {
+        // Add the relationship
+        if (Array.isArray(fromNode[relationType])) {
+          fromNode[relationType].push({ id: toId });
+        } else {
+          fromNode[relationType] = [{ id: toId }];
+        }
+        
+        // Save changes
+        await fromStore.write();
+      }
+      
+      return { success: true };
+    } catch (error) {
+      logger.error('Failed to create relationship', { 
+        error, fromType, fromId, relationType, toType, toId 
+      });
+      throw error;
+    }
+  }
+  
+  /**
+   * Get related entities
+   * @param entityType Entity type
+   * @param entityId Entity ID
+   * @param relationType Relationship type (optional)
+   * @returns Promise<any[]> Related entities
+   */
+  async getRelatedEntities(
+    entityType: string,
+    entityId: string,
+    relationType?: string
+  ): Promise<any[]> {
+    try {
+      // Get the entity
+      const store = await getStore(entityType);
+      await store.read();
+      
+      const collection = store.data[entityType] as EntityData;
+      const entity = collection[entityId];
+      
+      if (!entity) {
+        throw new Error(`Entity ${entityType}:${entityId} not found`);
+      }
+      
+      // Return related entities
+      if (relationType) {
+        return entity[relationType] || [];
+      } else {
+        // Return all relationships
+        const relatedEntities: Record<string, any[]> = {};
+        
+        for (const [key, value] of Object.entries(entity)) {
+          if (Array.isArray(value) && value.length > 0 && value[0].id) {
+            relatedEntities[key] = value;
+          }
+        }
+        
+        return relatedEntities;
+      }
+    } catch (error) {
+      logger.error('Failed to get related entities', { 
+        error, entityType, entityId, relationType 
+      });
+      throw error;
+    }
+  }
+}
+
+/**
  * Local implementation of a GraphQL client for the CKG
  */
 export class LocalGraphClient {

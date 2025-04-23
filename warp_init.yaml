@@ -1,0 +1,169 @@
+# Warp Agent System - Initial Configuration
+# This file is used by the Project Analyzer to populate the CKG with initial rules, personas, and workflows
+
+# Rules define standards, conventions, and constraints for the agents
+rules:
+  # Default scope rules (applied universally unless overridden)
+  - name: "CommitMessageFormat"
+    description: "Standard format for commit messages"
+    ruleType: "CODE_STANDARD"
+    content: "Commit messages should follow the format: type(scope): message\nTypes: feat, fix, docs, style, refactor, test, chore\nExample: feat(auth): implement JWT token refresh"
+    scope: "DEFAULT"
+    isActive: true
+    
+  - name: "CodeDocumentation"
+    description: "Requirements for code documentation"
+    ruleType: "CODE_STANDARD"
+    content: "All functions must have JSDoc comments describing parameters, return values, and behavior."
+    scope: "DEFAULT"
+    isActive: true
+    
+  # Project scope rules (override defaults for this project)
+  - name: "CommitMessageFormat"
+    description: "Project-specific format for commit messages"
+    ruleType: "CODE_STANDARD"
+    content: "Commit messages should follow the format: [type] message\nInclude ticket number as [WARP-123]\nExample: [feat] [WARP-123] implement JWT token refresh"
+    scope: "PROJECT"
+    isActive: true
+    
+  - name: "SecurityRequirements"
+    description: "Security standards for this project"
+    ruleType: "SECURITY"
+    content: "1. No hardcoded secrets\n2. All API endpoints must validate authentication\n3. Input validation for all user data\n4. Use parameterized queries for DB access"
+    scope: "PROJECT"
+    isActive: true
+
+# Personas define specialized agent roles and their behavior
+personas:
+  - role: "PRODUCT_LEAD"
+    description: "Responsible for defining high-level tasks and ensuring they meet product requirements"
+    promptTemplate: "You are a Product Lead responsible for translating user requirements into clear tasks. Your focus is on defining WHAT needs to be done, not HOW. Consider user experience, feature completeness, and business value. Ensure all requirements are clearly defined before breaking tasks down."
+    scope: "DEFAULT"
+    isActive: true
+    
+  - role: "BACKEND_ENGINEER"
+    description: "Implements server-side logic, APIs, and data storage"
+    promptTemplate: "You are a Backend Engineer responsible for implementing server-side logic. Your focus is on writing efficient, maintainable code with proper error handling and performance considerations. Follow best practices for API design, database interactions, and security."
+    scope: "DEFAULT"
+    isActive: true
+    
+  - role: "FRONTEND_ENGINEER"
+    description: "Implements user interfaces and client-side logic"
+    promptTemplate: "You are a Frontend Engineer responsible for implementing user interfaces. Follow component-based design principles. Ensure proper state management, responsive design, and accessibility. Consider performance optimizations and cross-browser compatibility."
+    scope: "DEFAULT"
+    isActive: true
+    
+  - role: "QA_TESTER"
+    description: "Defines and executes test cases"
+    promptTemplate: "You are a QA Tester responsible for ensuring software quality. Your focus is on defining comprehensive test cases, identifying edge cases, and validating that all requirements are met. Report any issues with clear reproduction steps."
+    scope: "DEFAULT"
+    isActive: true
+    
+  # Project-specific persona override
+  - role: "BACKEND_ENGINEER"
+    description: "Specializes in Dgraph and graph database operations"
+    promptTemplate: "You are a Backend Engineer with expertise in graph databases, particularly Dgraph. Your focus is on designing efficient graph schemas, writing optimized GraphQL+- queries, and ensuring proper data relationships. Consider performance implications of query patterns and proper indexing strategies."
+    scope: "PROJECT"
+    isActive: true
+
+# Workflows define the steps for different types of tasks
+workflows:
+  - name: "BugFix"
+    description: "Standard workflow for bug fixes"
+    appliesToTaskType: "BUGFIX"
+    scope: "DEFAULT"
+    isActive: true
+    version: "1.0"
+    steps:
+      - name: "Reproduce"
+        description: "Reproduce the bug to understand its cause"
+        stepOrder: 1
+        requiredRole: "QA_TESTER"
+        expectedSubTaskType: "TEST"
+        
+      - name: "Analyze"
+        description: "Analyze the code to identify the root cause"
+        stepOrder: 2
+        requiredRole: "BACKEND_ENGINEER"
+        expectedSubTaskType: "CODE"
+        
+      - name: "Fix"
+        description: "Implement the fix"
+        stepOrder: 3
+        requiredRole: "BACKEND_ENGINEER"
+        expectedSubTaskType: "CODE"
+        
+      - name: "Test"
+        description: "Test the fix to ensure it resolves the issue"
+        stepOrder: 4
+        requiredRole: "QA_TESTER"
+        expectedSubTaskType: "TEST"
+        
+  - name: "FeatureImplementation"
+    description: "Standard workflow for implementing new features"
+    appliesToTaskType: "FEATURE"
+    scope: "DEFAULT"
+    isActive: true
+    version: "1.0"
+    steps:
+      - name: "Design"
+        description: "Create technical design for the feature"
+        stepOrder: 1
+        requiredRole: "PRODUCT_LEAD"
+        expectedSubTaskType: "DESIGN"
+        
+      - name: "Implement"
+        description: "Implement the feature"
+        stepOrder: 2
+        requiredRole: "BACKEND_ENGINEER"
+        expectedSubTaskType: "CODE"
+        
+      - name: "UI"
+        description: "Implement the user interface"
+        stepOrder: 3
+        requiredRole: "FRONTEND_ENGINEER"
+        expectedSubTaskType: "CODE"
+        
+      - name: "Test"
+        description: "Test the feature"
+        stepOrder: 4
+        requiredRole: "QA_TESTER"
+        expectedSubTaskType: "TEST"
+        
+  # Project-specific workflow override
+  - name: "BugFix"
+    description: "Enhanced bug fix workflow with security scan"
+    appliesToTaskType: "BUGFIX"
+    scope: "PROJECT"
+    isActive: true
+    version: "1.1"
+    steps:
+      - name: "Reproduce"
+        description: "Reproduce the bug to understand its cause"
+        stepOrder: 1
+        requiredRole: "QA_TESTER"
+        expectedSubTaskType: "TEST"
+        
+      - name: "Analyze"
+        description: "Analyze the code to identify the root cause"
+        stepOrder: 2
+        requiredRole: "BACKEND_ENGINEER"
+        expectedSubTaskType: "CODE"
+        
+      - name: "Fix"
+        description: "Implement the fix"
+        stepOrder: 3
+        requiredRole: "BACKEND_ENGINEER"
+        expectedSubTaskType: "CODE"
+        
+      - name: "SecurityScan"
+        description: "Perform security scan on the changes"
+        stepOrder: 4
+        requiredRole: "BACKEND_ENGINEER"
+        expectedSubTaskType: "TEST"
+        
+      - name: "Test"
+        description: "Test the fix to ensure it resolves the issue"
+        stepOrder: 5
+        requiredRole: "QA_TESTER"
+        expectedSubTaskType: "TEST"

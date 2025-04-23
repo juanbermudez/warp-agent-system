@@ -14,7 +14,17 @@
     "schema:check": "node --loader ts-node/esm src/scripts/check-schema.ts",
     "schema:generate-zod": "node --loader ts-node/esm src/scripts/generate-zod.ts",
     "schema:init-no-zod": "node --loader ts-node/esm src/scripts/init-schema.ts --no-generate-zod",
-    "schema:check-sync": "node --loader ts-node/esm src/scripts/check-schema-sync.ts"
+    "schema:check-sync": "node --loader ts-node/esm src/scripts/check-schema-sync.ts",
+    "setup:auth": "node --loader ts-node/esm src/scripts/setup-supabase-auth.ts",
+    "analyzer:init": "node --loader ts-node/esm src/scripts/init-analyzer.ts",
+    "agent:cli": "node --loader ts-node/esm src/scripts/agent-cli.ts",
+    "agent:start": "node --loader ts-node/esm src/scripts/agent-cli.ts start",
+    "agent:generate": "node --loader ts-node/esm src/scripts/agent-cli.ts generate",
+    "agent:transition": "node --loader ts-node/esm src/scripts/agent-cli.ts transition",
+    "agent:task": "node --loader ts-node/esm src/scripts/agent-cli.ts task",
+    "agent:list": "node --loader ts-node/esm src/scripts/agent-cli.ts list",
+    "agent:hitl": "node --loader ts-node/esm src/scripts/agent-cli.ts hitl",
+    "agent:end": "node --loader ts-node/esm src/scripts/agent-cli.ts end"
   },
   "engines": {
     "node": ">=20.0.0"
@@ -23,16 +33,23 @@
   "license": "MIT",
   "dependencies": {
     "@grpc/grpc-js": "^1.9.0",
+    "@supabase/supabase-js": "^2.49.4",
     "dgraph-js": "^21.3.1",
+    "fastify": "^5.3.2",
     "graphql": "^16.8.0",
     "graphql-compose": "^9.0.10",
     "graphql-request": "^6.1.0",
+    "js-yaml": "^4.1.0",
     "lowdb": "^7.0.1",
+    "node-cache": "^5.1.2",
+    "openai": "^4.28.0",
+    "web-tree-sitter": "^0.20.8",
     "winston": "^3.10.0",
     "zod": "^3.22.2"
   },
   "devDependencies": {
     "@types/jest": "^29.5.4",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.5.6",
     "jest": "^29.6.4",
     "ts-jest": "^29.1.1",

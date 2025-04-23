@@ -5,6 +5,7 @@ import { queryCkgTool } from './tools/query_ckg.js';
 import { updateCkgTool } from './tools/update_ckg.js';
 import { initializeSchemaHandler } from './tools/initialize_schema.js';
 import { isDgraphRunning, initSchema } from './db/dgraph.js';
+import { startMCPServer } from './mcp-server-enhanced.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -67,15 +68,23 @@ async function main() {
 
     logger.info('Available tools:', { tools: tools.map(tool => tool.name) });
 
-    // In the future, this would initialize the actual MCP server
-    // For now, just log a message
+    // Start the MCP server
+    logger.info('Starting FASTMCP server...');
+    const server = await startMCPServer();
+    logger.info('FASTMCP server started successfully');
+
+    // Keep the process running
     logger.info('Warp Agent System is ready. Use npm scripts to manage the system:');
     logger.info(' - npm run schema:init       # Initialize the Dgraph schema');
     logger.info(' - npm run schema:check      # Check the schema status');
     logger.info(' - npm run schema:generate-zod # Generate Zod schemas from GraphQL');
+    logger.info(' - npm run setup:auth        # Configure Supabase authentication');
     
-    // Keep the process running
-    logger.info('Press Ctrl+C to exit');
+    // Handle graceful shutdown
+    process.on('SIGINT', async () => {
+      logger.info('Shutting down Warp Agent System...');
+      process.exit(0);
+    });
   } catch (error: unknown) {
     logger.error('Error initializing Warp Agent System', { 
       error: error instanceof Error ? error.message : String(error) 
