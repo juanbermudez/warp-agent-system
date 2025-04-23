@@ -6,8 +6,8 @@
  * This script tests the CKG-based activity tracking system.
  */
 
-import { ActivityTrackerCKG } from '../services/activity/activity-tracker-ckg';
-import { ActorType, ActivityType, RenderMode } from '../services/activity/types-ckg';
+import { ActivityTrackerCKG } from '../services/activity/activity-tracker-ckg.js';
+import { ActorType, ActivityType, RenderMode } from '../services/activity/types-ckg.js';
 import { v4 as uuidv4 } from 'uuid';
 
 // Create a mock task ID for testing

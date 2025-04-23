@@ -46,7 +46,14 @@
     "schema:add-activities": "node --loader ts-node/esm src/scripts/add-activity-schema.ts",
     "test:activity": "node --loader ts-node/esm src/tests/activity-tracking.test.ts",
     "test:activity:simple": "node --loader ts-node/esm src/tests/activity-simple-test.ts",
-    "test:activity:ckg": "node --loader ts-node/esm src/tests/activity-ckg.test.ts"
+    "test:activity:ckg": "node --loader ts-node/esm src/tests/activity-ckg.test.ts",
+    "activity:integrate": "bash ./run-activity-integration.sh",
+    "activity:agent-example": "bash ./test-agent-activity.sh",
+    "activity:ckg-comment": "node --loader ts-node/esm src/scripts/activity-cli-ckg.ts comment",
+    "activity:ckg-file": "node --loader ts-node/esm src/scripts/activity-cli-ckg.ts file-change",
+    "activity:ckg-command": "node --loader ts-node/esm src/scripts/activity-cli-ckg.ts command",
+    "activity:ckg-group": "node --loader ts-node/esm src/scripts/activity-cli-ckg.ts create-group",
+    "activity:ckg-timeline": "node --loader ts-node/esm src/scripts/activity-cli-ckg.ts timeline"
   },
   "engines": {
     "node": ">=20.0.0"

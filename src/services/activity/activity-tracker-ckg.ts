@@ -5,13 +5,22 @@
  * Uses the Code Knowledge Graph (CKG) for storage and retrieval.
  */
 
+// Define interface for query results
+interface QueryCkgResult {
+  success: boolean;
+  status?: 'success' | 'error';
+  data?: any;
+  results?: any[];
+  error?: string;
+}
+
 import { v4 as uuidv4 } from 'uuid';
 import { 
   Activity, ActivityGroup, ActorType, ActivityType, 
   RenderMode, FileChangeActivity, CommentActivity,
   CommandActivity, AgentTransitionActivity, TimelineOptions,
   FileChangeType
-} from './types-ckg';
+} from './types-ckg.js';
 import { queryCkg } from '../../tools/query-ckg.js';
 import { updateCkg } from '../../tools/update-ckg.js';
 
