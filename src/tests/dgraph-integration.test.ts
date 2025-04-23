@@ -7,8 +7,8 @@
 
 import { expect } from 'chai';
 import { describe, it, before, after } from 'mocha';
-import { GraphDatabase } from '../db/dgraph';
-import { DgraphClient } from '../db/dgraph-client';
+import { GraphDatabase } from '../db/dgraph.js';
+import { DgraphClient } from '../db/dgraph-client.js';
 import { queryCkg } from '../tools/query-ckg.js';
 import { updateCkg } from '../tools/update-ckg.js';
 import * as path from 'path';

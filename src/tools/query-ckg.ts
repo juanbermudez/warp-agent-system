@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { GraphDatabase } from '../db/dgraph';
+import { GraphDatabase } from '../db/dgraph.js';
 import { join } from 'path';
 import NodeCache from 'node-cache';
 

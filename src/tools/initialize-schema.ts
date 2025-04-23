@@ -1,4 +1,4 @@
-// src/tools/initialize_schema.ts
+// src/tools/initialize-schema.ts
 import { z } from 'zod';
 import { logger } from '../utils/logger.js';
 import { execSync } from 'child_process';

@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { GraphDatabase } from '../../src/db/dgraph';
+import { GraphDatabase } from '../../src/db/dgraph.js';
 import { queryCkg } from '../../src/tools/query-ckg.js';
 import { updateCkg } from '../../src/tools/update-ckg.js';
 import { analyzeTaskDependencies } from '../../src/tools/analyze-task-dependencies.js';

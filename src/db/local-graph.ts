@@ -254,7 +254,7 @@ export class LocalGraphDatabase {
     entityType: string,
     entityId: string,
     relationType?: string
-  ): Promise<any[]> {
+  ): Promise<any[] | Record<string, any[]>> {
     try {
       // Get the entity
       const store = await getStore(entityType);

@@ -12,8 +12,8 @@ import {
   CommandActivity, AgentTransitionActivity, TimelineOptions,
   FileChangeType
 } from './types-ckg';
-import { queryCkg } from '../../tools/query_ckg.js';
-import { updateCkg } from '../../tools/update_ckg.js';
+import { queryCkg } from '../../tools/query-ckg.js';
+import { updateCkg } from '../../tools/update-ckg.js';
 
 /**
  * Service for tracking and retrieving activities using the CKG database.
