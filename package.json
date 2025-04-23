@@ -24,7 +24,15 @@
     "agent:task": "node --loader ts-node/esm src/scripts/agent-cli.ts task",
     "agent:list": "node --loader ts-node/esm src/scripts/agent-cli.ts list",
     "agent:hitl": "node --loader ts-node/esm src/scripts/agent-cli.ts hitl",
-    "agent:end": "node --loader ts-node/esm src/scripts/agent-cli.ts end"
+    "agent:end": "node --loader ts-node/esm src/scripts/agent-cli.ts end",
+    "activity:cli": "node --loader ts-node/esm src/scripts/activity-cli.ts",
+    "activity:comment": "node --loader ts-node/esm src/scripts/activity-cli.ts comment",
+    "activity:file": "node --loader ts-node/esm src/scripts/activity-cli.ts file",
+    "activity:command": "node --loader ts-node/esm src/scripts/activity-cli.ts command",
+    "activity:transition": "node --loader ts-node/esm src/scripts/activity-cli.ts transition",
+    "activity:group": "node --loader ts-node/esm src/scripts/activity-cli.ts group",
+    "activity:list": "node --loader ts-node/esm src/scripts/activity-cli.ts list",
+    "activity:thread": "node --loader ts-node/esm src/scripts/activity-cli.ts thread"
   },
   "engines": {
     "node": ">=20.0.0"

@@ -9,6 +9,7 @@ import { logger } from '../../utils/logger';
 import AgentSessionManager, { AgentRole, SessionState } from './session-manager';
 import BlueprintLoader, { Blueprint } from './blueprint-loader';
 import fs from 'fs/promises';
+import { ActivityTracker, ActorType } from '../activity';
 
 /**
  * Task definition
@@ -30,6 +31,7 @@ export class AgentSystem {
   private sessionManager: AgentSessionManager;
   private blueprintLoader: BlueprintLoader;
   private memoryPath: string;
+  private activityTracker: ActivityTracker;
   
   /**
    * Constructor
@@ -40,6 +42,7 @@ export class AgentSystem {
     this.sessionManager = new AgentSessionManager(rootPath);
     this.blueprintLoader = new BlueprintLoader(rootPath);
     this.memoryPath = path.join(rootPath, '.warp_memory');
+    this.activityTracker = new ActivityTracker(rootPath);
   }
   
   /**
@@ -99,6 +102,18 @@ export class AgentSystem {
       'utf-8'
     );
     
+    // Log task creation activity
+    const session = this.sessionManager.getActiveSession();
+    await this.activityTracker.logActivity({
+      activityType: 'TASK_CREATED',
+      title: `Task Created: ${title}`,
+      content: description,
+      actorType: session ? ActorType.AGENT : ActorType.USER,
+      actorId: session ? session.activeRole : 'user',
+      taskId: taskId,
+      metadata: { taskType: type }
+    });
+    
     logger.info(`Created task: ${taskId}`);
     return task;
   }
@@ -111,7 +126,20 @@ export class AgentSystem {
    */
   async startSession(initialRole: AgentRole, taskId?: string): Promise<SessionState> {
     logger.info(`Starting agent session with initial role ${initialRole}`);
-    return this.sessionManager.createSession(initialRole, taskId);
+    const session = await this.sessionManager.createSession(initialRole, taskId);
+    
+    // Log session start activity
+    await this.activityTracker.logActivity({
+      activityType: 'AGENT_TRANSITION',
+      title: `Session Started: ${initialRole}`,
+      content: `New agent session started with role ${initialRole}${taskId ? ` for task ${taskId}` : ''}`,
+      actorType: ActorType.SYSTEM,
+      actorId: 'agent-system',
+      taskId: taskId,
+      metadata: { sessionId: session.sessionId }
+    });
+    
+    return session;
   }
   
   /**
@@ -189,7 +217,20 @@ export class AgentSystem {
    * @returns Updated session state
    */
   async transitionTo(newRole: AgentRole, notes?: string): Promise<SessionState> {
-    return this.sessionManager.transitionTo(newRole, notes);
+    const prevSession = this.sessionManager.getActiveSession();
+    const updatedSession = await this.sessionManager.transitionTo(newRole, notes);
+    
+    // Log the transition as an activity
+    if (prevSession) {
+      await this.activityTracker.logAgentTransition({
+        fromRole: prevSession.activeRole,
+        toRole: newRole,
+        reason: notes || `Transition from ${prevSession.activeRole} to ${newRole}`,
+        taskId: updatedSession.taskId,
+      });
+    }
+    
+    return updatedSession;
   }
   
   /**
@@ -203,6 +244,8 @@ export class AgentSystem {
     if (!task) {
       throw new Error(`Task not found: ${taskId}`);
     }
+    
+    const oldStatus = task.status;
     
     // Update status
     task.status = status;
@@ -220,6 +263,17 @@ export class AgentSystem {
     if (session && session.taskId === taskId) {
       await this.sessionManager.updateTaskState(status);
     }
+    
+    // Log task status change activity
+    await this.activityTracker.logActivity({
+      activityType: 'TASK_STATUS_CHANGED',
+      title: `Task Status Changed: ${oldStatus} → ${status}`,
+      content: `Task '${task.title}' status changed from ${oldStatus} to ${status}`,
+      actorType: session ? ActorType.AGENT : ActorType.USER,
+      actorId: session ? session.activeRole : 'user',
+      taskId: taskId,
+      metadata: { oldStatus, newStatus: status }
+    });
     
     logger.info(`Updated task ${taskId} status to ${status}`);
     return task;
@@ -257,6 +311,8 @@ export class AgentSystem {
       throw new Error(`Task not found: ${taskId}`);
     }
     
+    const oldRole = task.assignedRole;
+    
     // Update assigned role
     task.assignedRole = role;
     
@@ -267,6 +323,18 @@ export class AgentSystem {
       JSON.stringify(task, null, 2),
       'utf-8'
     );
+    
+    // Log task assignment activity
+    const session = this.sessionManager.getActiveSession();
+    await this.activityTracker.logActivity({
+      activityType: 'TASK_ASSIGNED',
+      title: `Task Assigned: ${role}`,
+      content: `Task '${task.title}' assigned to ${role}${oldRole ? ` (previously: ${oldRole})` : ''}`,
+      actorType: session ? ActorType.AGENT : ActorType.USER,
+      actorId: session ? session.activeRole : 'user',
+      taskId: taskId,
+      metadata: { oldRole: oldRole || null, newRole: role }
+    });
     
     logger.info(`Assigned task ${taskId} to role ${role}`);
     return task;
@@ -294,7 +362,23 @@ export class AgentSystem {
    * @returns True if session was successfully ended
    */
   async endSession(): Promise<boolean> {
-    return this.sessionManager.endSession();
+    const session = this.sessionManager.getActiveSession();
+    const result = await this.sessionManager.endSession();
+    
+    // Log session end activity
+    if (session) {
+      await this.activityTracker.logActivity({
+        activityType: 'AGENT_TRANSITION',
+        title: 'Session Ended',
+        content: `Agent session ended. Final role: ${session.activeRole}`,
+        actorType: ActorType.SYSTEM,
+        actorId: 'agent-system',
+        taskId: session.taskId,
+        metadata: { sessionId: session.sessionId }
+      });
+    }
+    
+    return result;
   }
   
   /**
@@ -334,6 +418,109 @@ export class AgentSystem {
       logger.error('Error listing tasks:', error);
       return [];
     }
+  }
+  
+  /**
+   * Add a comment to the current task
+   * @param content Comment content
+   * @returns The created comment activity
+   */
+  async addComment(content: string): Promise<any> {
+    const session = this.sessionManager.getActiveSession();
+    if (!session || !session.taskId) {
+      throw new Error('No active session or task ID for adding a comment');
+    }
+    
+    return this.activityTracker.logComment({
+      content,
+      actorType: ActorType.AGENT,
+      actorId: session.activeRole,
+      taskId: session.taskId
+    });
+  }
+  
+  /**
+   * Log a command execution
+   * @param command Command string
+   * @param output Command output
+   * @param exitCode Exit code
+   * @returns The created command activity
+   */
+  async logCommandExecution(command: string, output: string, exitCode: number): Promise<any> {
+    const session = this.sessionManager.getActiveSession();
+    
+    return this.activityTracker.logCommand({
+      command,
+      output,
+      exitCode,
+      actorType: session ? ActorType.AGENT : ActorType.SYSTEM,
+      actorId: session ? session.activeRole : 'system',
+      taskId: session?.taskId
+    });
+  }
+  
+  /**
+   * Log a file change
+   * @param filePath Path to the file
+   * @param changeType Type of change (created, modified, deleted)
+   * @param diffContent Optional diff content
+   * @returns The created file change activity
+   */
+  async logFileChange(filePath: string, changeType: 'CREATED' | 'MODIFIED' | 'DELETED', diffContent?: string): Promise<any> {
+    const session = this.sessionManager.getActiveSession();
+    
+    return this.activityTracker.logFileChange({
+      filePath,
+      changeType,
+      diffContent,
+      actorType: session ? ActorType.AGENT : ActorType.USER,
+      actorId: session ? session.activeRole : 'user',
+      taskId: session?.taskId
+    });
+  }
+  
+  /**
+   * Create an activity group
+   * @param title Group title
+   * @param description Optional group description
+   * @returns The created activity group ID
+   */
+  async createActivityGroup(title: string, description?: string): Promise<string> {
+    const session = this.sessionManager.getActiveSession();
+    
+    const group = await this.activityTracker.createActivityGroup({
+      title,
+      description,
+      taskId: session?.taskId
+    });
+    
+    return group.id;
+  }
+  
+  /**
+   * Complete an activity group
+   * @param groupId Group ID
+   */
+  async completeActivityGroup(groupId: string): Promise<void> {
+    await this.activityTracker.completeActivityGroup(groupId);
+  }
+  
+  /**
+   * Get task timeline
+   * @param taskId Optional task ID (uses current task if not specified)
+   * @returns Array of activities
+   */
+  async getTaskTimeline(taskId?: string): Promise<any[]> {
+    const currentTaskId = taskId || this.sessionManager.getActiveSession()?.taskId;
+    
+    if (!currentTaskId) {
+      throw new Error('No task ID specified or available in the current session');
+    }
+    
+    return this.activityTracker.getTaskTimeline(currentTaskId, {
+      includeNested: true,
+      defaultExpanded: false
+    });
   }
 }
 
